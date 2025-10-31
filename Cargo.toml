@@ -1,0 +1,53 @@
+[package]
+name = "cyx"
+version = "0.1.0"
+edition = "2021"
+authors = ["neur0map"]
+license = "MIT"
+description = "Cyx: Your cybersecurity companion in command."
+repository = "https://github.com/neur0map/cyx"
+keywords = ["cybersecurity", "pentesting", "hacking", "cli", "security"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+
+# CLI framework
+clap = { version = "4.5", features = ["derive", "cargo"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# HTML to Markdown conversion
+html2text = "0.12"
+
+# UI/Display
+comfy-table = "7.1"
+colored = "2.1"
+dialoguer = "0.11"
+indicatif = "0.17"
+
+# System paths
+directories = "5.0"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Utilities
+regex = "1.10"
+url = "2.5"
+urlencoding = "2.1"
+html-escape = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
