@@ -43,12 +43,14 @@ graph LR
 ## Features
 
 - **Fast responses** - 2-5 seconds average with optimized LLM queries
+- **Learn mode** - Detailed educational breakdowns with flag explanations and sources
+- **Source tracking** - Every response shows provider, model, and search capability
 - **Secure** - API keys stored with 600 permissions in local config
 - **Command-first** - Executable commands before explanations
 - **Pentester-optimized** - System prompts tuned for security professionals
 - **Dual LLM support** - Perplexity (built-in web search) or Groq (fast inference)
 - **Interactive mode** - Conversation history for follow-up questions
-- **CLI flags** - Quiet, verbose, no-tty modes for scripting
+- **CLI flags** - Quiet, verbose, no-tty, learn modes for different workflows
 
 ## Installation
 
@@ -85,10 +87,11 @@ cyx> /exit
 
 ### CLI Flags
 ```bash
-cyx -q "command"          # Quiet mode
-cyx -v "command"          # Verbose mode
-cyx --no-tty "command"    # No-TTY for scripting
-cyx --no-search "command" # Skip web search
+cyx -q "command"         # Quiet mode (no headers/sources)
+cyx -v "command"         # Verbose mode (detailed progress)
+cyx --no-tty "command"   # No-TTY for scripting
+cyx -l "command"         # Learn mode (detailed explanations)
+cyx --learn "command"    # Learn mode (long form)
 ```
 
 ## Configuration
@@ -103,14 +106,83 @@ Config location: `~/.config/cyx/config.toml`
 
 ## Example Output
 
+### Normal Mode
 ```bash
 $ cyx "nmap stealth scan"
 
---- Response ---
+[*] COMMAND RESULT
+───────────────────────────────────────
 ```bash
 nmap -sS <target>
 ```
--sS performs a TCP SYN stealth scan. Requires root privileges.
+TCP SYN stealth scan - doesn't complete handshake. Requires root.
+
+[*] SOURCES
+───────────────────────────────────────
+Provider: Perplexity (sonar-pro)
+Search: Yes (performed web search)
+```
+
+### Learn Mode
+```bash
+$ cyx --learn "nmap stealth scan"
+
+[*] COMMAND RESULT
+───────────────────────────────────────
+```bash
+nmap -sS <target>
+```
+TCP SYN scan - doesn't complete handshake, harder to detect. Requires root.
+
+Tool: nmap (Network Mapper)
+  Industry-standard network scanner for reconnaissance and security auditing
+  Created by Gordon Lyon (Fyodor), GPL license
+
+Flags:
+  -sS    TCP SYN Scan (Stealth Scan)
+         - Sends TCP SYN packet to each target port
+         - Waits for SYN-ACK (open) or RST (closed) response
+         - Sends RST to close connection before handshake completes
+         - Requires root/sudo for raw socket access
+         - Faster than full TCP connect scan
+
+How it works:
+  1. Sends TCP SYN packet to target port
+  2. If open: receives SYN-ACK, marks as open, sends RST
+  3. If closed: receives RST, marks as closed
+  4. If filtered: no response or ICMP unreachable
+
+Advantages:
+  - Fast, doesn't complete full TCP handshake
+  - Stealthy, may not appear in application logs
+  - Reliable port state detection
+
+Disadvantages:
+  - Requires root privileges
+  - Can be detected by modern IDS/IPS
+  - Some firewalls may block SYN packets
+
+When to use:
+  - Default choice for most port scans
+  - Initial network reconnaissance
+  - When you have root access
+
+Alternatives:
+  -sT    TCP connect (no root needed, slower)
+  -sN    TCP NULL scan (bypass some firewalls)
+  -sF    TCP FIN scan (bypass some firewalls)
+
+Example usage:
+  nmap -sS 192.168.1.100
+  nmap -sS -p 22,80,443 example.com
+  nmap -sS 10.0.0.0/24
+
+Sources: nmap official documentation, RFC 793 (TCP)
+
+[*] SOURCES
+───────────────────────────────────────
+Provider: Perplexity (sonar-pro)
+Search: Yes (performed web search)
 ```
 
 ## Security

