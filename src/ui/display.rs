@@ -135,4 +135,116 @@ impl Display {
 
         println!("{}", format!("╰{}", "─".repeat(width)).cyan());
     }
+
+    /// Print the box header for live streaming
+    pub fn stream_box_header(title: &str) {
+        let width = 58;
+        println!();
+        println!("{}", format!("╭─── {} {}", title, "─".repeat(width - title.len() - 6)).cyan());
+    }
+
+    /// Print the box footer for live streaming
+    pub fn stream_box_footer() {
+        let width = 58;
+        println!("{}", format!("╰{}", "─".repeat(width)).cyan());
+    }
+
+    /// Print a line with smooth character-by-character animation
+    pub fn print_line_animated(line: &str, is_code_fence: bool, is_code: bool) {
+        use std::io::{self, Write};
+        use std::thread;
+        use std::time::Duration;
+
+        // Determine color based on type
+        for ch in line.chars() {
+            if is_code_fence {
+                print!("{}", ch.to_string().dimmed());
+            } else if is_code {
+                print!("{}", ch.to_string().yellow());
+            } else {
+                print!("{}", ch);
+            }
+            io::stdout().flush().unwrap();
+
+            // Add tiny delay for smooth typewriter effect (only for non-whitespace)
+            if !ch.is_whitespace() {
+                thread::sleep(Duration::from_micros(100));
+            }
+        }
+        println!();
+    }
+
+    /// Print sources header with smooth animation
+    pub fn print_sources_header(provider_name: &str, model_name: &str, searches_web: bool) {
+        use std::io::{self, Write};
+        use std::thread;
+        use std::time::Duration;
+
+        // Print each part with smooth effect
+        print!("{}", "[*] SOURCES".cyan().bold());
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(50));
+        println!();
+
+        print!("{}", "───────────────────────────────────────".cyan());
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(30));
+        println!();
+
+        print!("{} ", "Provider:".dimmed());
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(20));
+
+        print!("{}", provider_name.cyan());
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(20));
+
+        print!(" ({})", model_name.dimmed());
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(20));
+        println!();
+
+        print!("{} ", "Search:".dimmed());
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(20));
+
+        let search_status = if searches_web {
+            "Yes (performed web search)".green()
+        } else {
+            "No (knowledge base only)".yellow()
+        };
+        print!("{}", search_status);
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(20));
+        println!();
+        println!();
+
+        print!("{}", "Links:".dimmed());
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(20));
+        println!();
+    }
+
+    /// Print a link with smooth character-by-character animation
+    pub fn print_link_animated(link: &str) {
+        use std::io::{self, Write};
+        use std::thread;
+        use std::time::Duration;
+
+        print!("  {} ", "-".dimmed());
+        io::stdout().flush().unwrap();
+        thread::sleep(Duration::from_millis(10));
+
+        // Print link with smooth animation
+        for ch in link.chars() {
+            print!("{}", ch);
+            io::stdout().flush().unwrap();
+
+            // Faster animation for URLs
+            if !ch.is_whitespace() {
+                thread::sleep(Duration::from_micros(800));
+            }
+        }
+        println!();
+    }
 }

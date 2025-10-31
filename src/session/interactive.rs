@@ -5,6 +5,7 @@ use crate::{
     ui::Display,
 };
 use anyhow::Result;
+use colored::Colorize;
 
 pub struct InteractiveSession {
     context: CliContext,
@@ -44,14 +45,8 @@ impl InteractiveSession {
     }
 
     fn process_query(&self, query: &str) -> Result<()> {
+        use std::io::{self, Write};
         use std::sync::{Arc, Mutex};
-
-        // Create progress bar
-        let pb = if self.context.should_show_progress() && !self.context.no_tty {
-            Some(Arc::new(Display::create_progress_bar("Generating response...")))
-        } else {
-            None
-        };
 
         // Build conversation with system prompt
         let system_prompt = if self.context.learn {
@@ -62,56 +57,168 @@ impl InteractiveSession {
 
         let messages = vec![Message::system(system_prompt), Message::user(query)];
 
+        // Create progress bar
+        let pb = if self.context.should_show_progress() && !self.context.no_tty {
+            Some(Arc::new(Display::create_progress_bar("Getting response...")))
+        } else {
+            None
+        };
+
+        // Track state for streaming
+        let line_buffer = Arc::new(Mutex::new(String::new()));
+        let in_code_block = Arc::new(Mutex::new(false));
+        let sources_started = Arc::new(Mutex::new(false));
+        let box_closed = Arc::new(Mutex::new(false));
+        let box_header_printed = Arc::new(Mutex::new(false));
+        let sources_header_printed = Arc::new(Mutex::new(false));
         let char_count = Arc::new(Mutex::new(0));
+        let quiet = self.context.quiet;
+        let no_tty = self.context.no_tty;
 
-        let pb_clone = pb.clone();
+        let line_buffer_clone = line_buffer.clone();
+        let in_code_block_clone = in_code_block.clone();
+        let sources_started_clone = sources_started.clone();
+        let box_closed_clone = box_closed.clone();
+        let box_header_printed_clone = box_header_printed.clone();
+        let sources_header_printed_clone = sources_header_printed.clone();
         let char_count_clone = char_count.clone();
+        let pb_clone = pb.clone();
 
-        let response = self.provider.send_message_stream(
+        let provider_name = self.provider.name().to_string();
+        let model_name = self.provider.model().to_string();
+        let searches_web = self.provider.searches_web();
+
+        let _response = self.provider.send_message_stream(
             &messages,
             Box::new(move |chunk| {
+                // Update character count and progress bar
                 let mut count = char_count_clone.lock().unwrap();
                 *count += chunk.len();
 
-                // Update progress bar message periodically
-                if *count % 100 == 0 {
+                // Update progress bar periodically
+                if *count % 50 == 0 || *count < 50 {
                     if let Some(ref progress) = pb_clone {
                         progress.set_message(format!("Streaming... {} chars", *count));
+                    }
+                }
+
+                if quiet || no_tty {
+                    print!("{}", chunk);
+                    io::stdout().flush().unwrap();
+                } else {
+                    let mut buffer = line_buffer_clone.lock().unwrap();
+                    let mut in_code = in_code_block_clone.lock().unwrap();
+                    let mut sources_started = sources_started_clone.lock().unwrap();
+                    let mut box_closed = box_closed_clone.lock().unwrap();
+                    let mut box_header_printed = box_header_printed_clone.lock().unwrap();
+                    let mut sources_header_printed = sources_header_printed_clone.lock().unwrap();
+
+                    // Print box header on first chunk
+                    if !*box_header_printed {
+                        if let Some(ref progress) = pb_clone {
+                            progress.finish_and_clear();
+                        }
+                        Display::stream_box_header("RESPONSE");
+                        print!("{} ", "│".cyan());
+                        io::stdout().flush().unwrap();
+                        *box_header_printed = true;
+                    }
+
+                    for ch in chunk.chars() {
+                        if ch == '\n' {
+                            // Check if we've hit the [SOURCES] section
+                            if buffer.trim() == "[SOURCES]" {
+                                *sources_started = true;
+                                if !*box_closed {
+                                    println!();
+                                    Display::stream_box_footer();
+                                    println!();
+                                    *box_closed = true;
+                                }
+
+                                if !*sources_header_printed {
+                                    // Print sources header with animation
+                                    Display::print_sources_header(
+                                        &provider_name,
+                                        &model_name,
+                                        searches_web,
+                                    );
+                                    *sources_header_printed = true;
+                                }
+
+                                buffer.clear();
+                                continue;
+                            }
+
+                            // If we're in sources section, print links with animation
+                            if *sources_started {
+                                let line = buffer.trim();
+                                if line.starts_with("- ") {
+                                    Display::print_link_animated(&line[2..]);
+                                }
+                                buffer.clear();
+                                continue;
+                            }
+
+                            // Inside the response box - print with smooth animation
+                            if buffer.trim().starts_with("```") {
+                                *in_code = !*in_code;
+                                Display::print_line_animated(&buffer, true, false);
+                            } else if *in_code {
+                                Display::print_line_animated(&buffer, false, true);
+                            } else {
+                                Display::print_line_animated(&buffer, false, false);
+                            }
+                            buffer.clear();
+                            print!("{} ", "│".cyan());
+                            io::stdout().flush().unwrap();
+                        } else {
+                            buffer.push(ch);
+                        }
                     }
                 }
             }),
         )?;
 
-        // Finish progress bar
-        if let Some(progress) = pb {
-            progress.finish_and_clear();
-        }
+        // Print any remaining buffer content
+        if !self.context.quiet && !self.context.no_tty {
+            let buffer = line_buffer.lock().unwrap();
+            let box_closed = box_closed.lock().unwrap();
 
-        // Extract sources from response
-        let (clean_response, source_links) = Self::extract_sources(&response);
+            if !buffer.is_empty() {
+                let sources_started = sources_started.lock().unwrap();
+                if *sources_started {
+                    // Remaining link content
+                    let line = buffer.trim();
+                    if line.starts_with("- ") {
+                        Display::print_link_animated(&line[2..]);
+                    }
+                } else {
+                    // Remaining response content
+                    let in_code = in_code_block.lock().unwrap();
+                    if *in_code {
+                        Display::print_line_animated(&buffer, false, true);
+                    } else {
+                        Display::print_line_animated(&buffer, false, false);
+                    }
+                }
+            }
 
-        // Display response in boxed section
-        if !self.context.quiet {
-            Display::stream_box_section("RESPONSE", &clean_response);
-        } else {
-            // Quiet mode: just print the response
-            println!("{}", clean_response);
-        }
+            if !*box_closed {
+                println!();
+                Display::stream_box_footer();
+            }
 
-        // Display sources with extracted links
-        if !self.context.quiet {
-            Display::sources_with_links(
-                self.provider.name(),
-                self.provider.model(),
-                self.provider.searches_web(),
-                &source_links,
-            );
+            println!();
+        } else if self.context.quiet {
+            println!();
         }
 
         Ok(())
     }
 
     /// Extract sources from response and return (clean_response, sources_list)
+    #[allow(dead_code)]
     fn extract_sources(response: &str) -> (String, Vec<String>) {
         if let Some(sources_pos) = response.find("[SOURCES]") {
             let (clean_content, sources_section) = response.split_at(sources_pos);

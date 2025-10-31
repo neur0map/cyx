@@ -4,13 +4,11 @@
 
 ## Features
 
-- **[X] LLM-Powered**: Uses advanced language models (Perplexity, Groq) for instant command lookup
-- **[X] Command-First**: Executable commands before explanations - zero fluff
-- **[X] Interactive Mode**: Conversational interface with context awareness and follow-up questions
-- **[X] Fast**: Written in Rust for maximum performance (2-5 second average response time)
-- **[X] Pentester-Optimized**: System prompt assumes authorization, no ethics disclaimers
-- **[X] Beautiful CLI**: Clean formatted output for easy reading
-- **[X] Secure**: API keys stored with 600 permissions in local config
+- LLM-Powered: Uses advanced language models (Perplexity, Groq) for instant command lookup
+- Command-First: Executable commands before explanations - zero fluff
+- Fast: Written in Rust for maximum performance (2-5 second average response time)
+- Pentester-Optimized: System prompt assumes authorization, no ethics disclaimers
+- Secure: API keys stored with 600 permissions in local config
 
 ## LLM Providers
 
@@ -231,6 +229,3 @@ MIT License - see [LICENSE](LICENSE) for details.
 - The Rust community for outstanding crates and tools
 - The cybersecurity community for continuous knowledge sharing
 
----
-
-**Cyx: Fast. Direct. Built for pentesters.**

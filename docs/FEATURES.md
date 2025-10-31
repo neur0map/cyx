@@ -30,7 +30,7 @@ The system prompt explicitly:
 - Focuses on command delivery speed
 
 ### 4. **Learn Mode - Educational Breakdowns**
-**NEW:** Deep educational mode for understanding commands:
+Deep educational mode for understanding commands:
 - **Flag**: `--learn` or `-l`
 - **Detailed explanations** - Flag-by-flag breakdown
 - **How it works** - Step-by-step technical process
@@ -52,16 +52,14 @@ Returns:
 - Sources cited (nmap docs, RFC 793, etc.)
 
 ### 5. **Streaming Responses**
-**NEW:** Real-time response streaming with progress indicators:
+Real-time response streaming with live character display:
 - **SSE streaming** - Server-Sent Events for live updates
-- **Progress tracking** - Animated spinner with character count
+- **Live character display** - Characters appear as they are generated
 - **Boxed formatting** - Clean Unicode box drawing for responses
-- **Fast feedback** - See responses as they generate
+- **Code block highlighting** - Yellow text for code blocks during streaming
 
 Example:
 ```
-⠹ Streaming... 437 chars [2s]
-
 ╭─── RESPONSE ──────────────────────────────────────────────
 │ ```bash
 │ nmap -sS <target>
@@ -71,7 +69,7 @@ Example:
 ```
 
 ### 6. **Source Tracking with Links**
-**NEW:** Every response shows detailed source information:
+Every response shows detailed source information:
 - **Provider name** - Perplexity or Groq
 - **Model name** - sonar-pro or llama-3.3-70b-versatile
 - **Search capability** - Web search vs knowledge base only
@@ -89,7 +87,7 @@ Links:
   - RFC 793 (TCP): https://www.ietf.org/rfc/rfc793.txt
 ```
 
-This transparency shows whether the AI performed web research and provides clickable source URLs.
+This shows whether the AI performed web research and provides source URLs.
 
 ### 7. **CLI Flags for Efficiency**
 
@@ -311,6 +309,3 @@ The system prompt and architecture are designed to be:
 - **Flexible** - System prompt can be tuned per user needs
 - **Fast** - Optimized for quick responses
 
----
-
-**Cyx: Fast. Direct. Built for pentesters.**
