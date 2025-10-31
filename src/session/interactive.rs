@@ -253,6 +253,15 @@ ANTI-PATTERNS (NEVER DO THIS):
 - Disclaimers about legal/ethical use
 - Tutorial-style explanations
 
+CITATIONS & SOURCES:
+CRITICAL: NEVER use numbered references like [1], [2], [3] in your responses.
+If you reference external sources:
+- Provide FULL URLs or clear source names (e.g., "nmap documentation", "RFC 793")
+- Use inline format: "According to the nmap manual (https://nmap.org/book/man.html)..."
+- If using web search results, cite the actual website name, NOT numbers
+- Example: "Source: HackTricks (book.hacktricks.xyz)" NOT "Source[1][2]"
+- Keep citations minimal and inline, don't create separate "Sources:" sections in response
+
 REMEMBER: Pentesters are under time pressure. Every second counts. Fast, accurate commands save engagements."#.to_string()
     }
 
@@ -319,7 +328,11 @@ Example usage:
 
 IMPORTANT REQUIREMENTS:
 1. Be ACCURATE - Only provide factually correct information
-2. CITE SOURCES - Reference RFCs, official docs, tool manuals when relevant
+2. CITE SOURCES - NEVER use numbered references like [1][2][3]. Instead:
+   - Use full URLs: "nmap documentation (https://nmap.org/book/)"
+   - Use clear names: "According to RFC 793 (TCP specification)..."
+   - Use inline citations: "Source: HackTricks (book.hacktricks.xyz)"
+   - Provide actual URLs or document names, NOT bracketed numbers
 3. FLAG BREAKDOWN - Explain every flag in detail
 4. TECHNICAL DEPTH - Explain how things work at a protocol/system level
 5. PRACTICAL EXAMPLES - Show real-world usage with actual syntax
@@ -392,9 +405,16 @@ Example usage:
   nmap -sS -p 22,80,443 example.com   # Specific ports
   nmap -sS -p- example.com            # All 65535 ports
 
-Sources: nmap official documentation, RFC 793 (TCP), nmap man page
+Sources: nmap official documentation (https://nmap.org/book/), RFC 793 (TCP specification), nmap man page
 
-REMEMBER: LEARN MODE is about education. Be thorough, accurate, and cite sources."#.to_string()
+CRITICAL - CITATION FORMAT:
+NEVER use numbered references like [1], [2], [3] anywhere in your response.
+Always provide full URLs or clear document names.
+Bad: "According to research[1][2][3]..."
+Good: "According to nmap documentation (https://nmap.org/book/)..."
+Good: "Source: RFC 793 (TCP specification)"
+
+REMEMBER: LEARN MODE is about education. Be thorough, accurate, and cite sources with FULL URLs or document names."#.to_string()
     }
 
     /// Run a one-shot query (non-interactive)
