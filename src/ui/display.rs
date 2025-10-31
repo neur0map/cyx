@@ -222,8 +222,17 @@ impl Display {
         println!();
         println!("{}", format!("╭─── {} {}", title, "─".repeat(width - title.len() - 6)).cyan());
 
+        // Detect code blocks and color them yellow
+        let mut in_code_block = false;
         for line in content.lines() {
-            println!("{} {}", "│".cyan(), line);
+            if line.trim().starts_with("```") {
+                in_code_block = !in_code_block;
+                println!("{} {}", "│".cyan(), line.dimmed());
+            } else if in_code_block {
+                println!("{} {}", "│".cyan(), line.yellow());
+            } else {
+                println!("{} {}", "│".cyan(), line);
+            }
         }
 
         println!("{}", format!("╰{}", "─".repeat(width)).cyan());
