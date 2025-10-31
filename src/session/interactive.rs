@@ -107,22 +107,52 @@ impl InteractiveSession {
     }
 
     fn process_query(&mut self, query: &str) -> Result<()> {
-        if self.context.should_show_progress() {
-            Display::loading("Analyzing...");
+        use std::sync::{Arc, Mutex};
+
+        // Create progress bar
+        let pb = if self.context.should_show_progress() && !self.context.no_tty {
+            Some(Arc::new(Display::create_progress_bar("Generating response...")))
+        } else {
+            None
+        };
+
+        // Send query with streaming
+        self.conversation_history.push(Message::user(query));
+
+        let char_count = Arc::new(Mutex::new(0));
+
+        let pb_clone = pb.clone();
+        let char_count_clone = char_count.clone();
+
+        let response = self.provider.send_message_stream(
+            &self.conversation_history,
+            Box::new(move |chunk| {
+                let mut count = char_count_clone.lock().unwrap();
+                *count += chunk.len();
+
+                // Update progress bar message periodically
+                if *count % 100 == 0 {
+                    if let Some(ref progress) = pb_clone {
+                        progress.set_message(format!("Streaming... {} chars", *count));
+                    }
+                }
+            }),
+        )?;
+
+        // Finish progress bar
+        if let Some(progress) = pb {
+            progress.finish_and_clear();
         }
 
-        // Send query directly to LLM
-        self.conversation_history.push(Message::user(query));
-        let response = self.provider.send_message(&self.conversation_history)?;
         self.conversation_history.push(Message::assistant(&response));
 
-        // Display command result header
+        // Display response in boxed section
         if !self.context.quiet {
-            Display::command_result_header();
+            Display::stream_box_section("RESPONSE", &response);
+        } else {
+            // Quiet mode: just print the response
+            println!("{}", response);
         }
-
-        // Display response
-        Display::llm_response(&response);
 
         // Display sources
         if !self.context.quiet {

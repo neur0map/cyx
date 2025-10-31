@@ -14,7 +14,7 @@ categories = ["command-line-utilities"]
 tokio = { version = "1.40", features = ["full"] }
 
 # HTTP client
-reqwest = { version = "0.12", features = ["json", "blocking"] }
+reqwest = { version = "0.12", features = ["json", "blocking", "stream"] }
 
 # CLI framework
 clap = { version = "4.5", features = ["derive", "cargo"] }
@@ -45,6 +45,7 @@ regex = "1.10"
 url = "2.5"
 urlencoding = "2.1"
 html-escape = "0.2"
+unicode-width = "0.1"
 
 [profile.release]
 opt-level = 3
