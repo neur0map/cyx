@@ -103,6 +103,40 @@ impl Display {
         println!();
     }
 
+    /// Display source information with extracted links
+    pub fn sources_with_links(
+        provider_name: &str,
+        model_name: &str,
+        searched: bool,
+        links: &[String],
+    ) {
+        println!("\n{}", "[*] SOURCES".cyan().bold());
+        println!("{}", "───────────────────────────────────────".cyan());
+        println!(
+            "{} {} ({})",
+            "Provider:".dimmed(),
+            provider_name.cyan(),
+            model_name.dimmed()
+        );
+
+        let search_status = if searched {
+            "Yes (performed web search)".green()
+        } else {
+            "No (knowledge base only)".yellow()
+        };
+        println!("{} {}", "Search:".dimmed(), search_status);
+
+        // Display extracted links if any
+        if !links.is_empty() {
+            println!("\n{}", "Links:".dimmed());
+            for link in links {
+                println!("  {} {}", "-".dimmed(), link);
+            }
+        }
+
+        println!();
+    }
+
     /// Display learn mode separator
     pub fn learn_mode_separator() {
         println!("\n{}", "[LEARN MODE] Detailed Breakdown".yellow().bold());

@@ -146,20 +146,24 @@ impl InteractiveSession {
 
         self.conversation_history.push(Message::assistant(&response));
 
+        // Extract sources from response
+        let (clean_response, source_links) = Self::extract_sources(&response);
+
         // Display response in boxed section
         if !self.context.quiet {
-            Display::stream_box_section("RESPONSE", &response);
+            Display::stream_box_section("RESPONSE", &clean_response);
         } else {
             // Quiet mode: just print the response
-            println!("{}", response);
+            println!("{}", clean_response);
         }
 
-        // Display sources
+        // Display sources with extracted links
         if !self.context.quiet {
-            Display::sources(
+            Display::sources_with_links(
                 self.provider.name(),
                 self.provider.model(),
                 self.provider.searches_web(),
+                &source_links,
             );
         }
 
@@ -173,6 +177,28 @@ impl InteractiveSession {
             Self::create_system_prompt()
         };
         self.conversation_history = vec![Message::system(system_prompt)];
+    }
+
+    /// Extract sources from response and return (clean_response, sources_list)
+    fn extract_sources(response: &str) -> (String, Vec<String>) {
+        if let Some(sources_pos) = response.find("[SOURCES]") {
+            let (clean_content, sources_section) = response.split_at(sources_pos);
+
+            // Parse sources section
+            let mut sources = Vec::new();
+            for line in sources_section.lines().skip(1) { // Skip "[SOURCES]" line
+                let line = line.trim();
+                if line.starts_with('-') {
+                    // Remove leading "- " and add to sources
+                    sources.push(line[1..].trim().to_string());
+                }
+            }
+
+            (clean_content.trim().to_string(), sources)
+        } else {
+            // No sources section found
+            (response.to_string(), Vec::new())
+        }
     }
 
     fn create_system_prompt() -> String {
@@ -255,12 +281,19 @@ ANTI-PATTERNS (NEVER DO THIS):
 
 CITATIONS & SOURCES:
 CRITICAL: NEVER use numbered references like [1], [2], [3] in your responses.
-If you reference external sources:
-- Provide FULL URLs or clear source names (e.g., "nmap documentation", "RFC 793")
-- Use inline format: "According to the nmap manual (https://nmap.org/book/man.html)..."
-- If using web search results, cite the actual website name, NOT numbers
-- Example: "Source: HackTricks (book.hacktricks.xyz)" NOT "Source[1][2]"
-- Keep citations minimal and inline, don't create separate "Sources:" sections in response
+
+At the very END of your response, after all content, include a sources section in this EXACT format:
+
+[SOURCES]
+- Description: Full URL
+- Description: Full URL
+
+Example:
+[SOURCES]
+- nmap documentation: https://nmap.org/book/
+- RFC 793 (TCP): https://www.ietf.org/rfc/rfc793.txt
+
+Keep your main response clean without inline citations. Save ALL source links for the [SOURCES] section at the end.
 
 REMEMBER: Pentesters are under time pressure. Every second counts. Fast, accurate commands save engagements."#.to_string()
     }
@@ -405,16 +438,23 @@ Example usage:
   nmap -sS -p 22,80,443 example.com   # Specific ports
   nmap -sS -p- example.com            # All 65535 ports
 
-Sources: nmap official documentation (https://nmap.org/book/), RFC 793 (TCP specification), nmap man page
+[SOURCES]
+- nmap official documentation: https://nmap.org/book/
+- RFC 793 (TCP specification): https://www.ietf.org/rfc/rfc793.txt
+- nmap man page: https://linux.die.net/man/1/nmap
 
 CRITICAL - CITATION FORMAT:
 NEVER use numbered references like [1], [2], [3] anywhere in your response.
-Always provide full URLs or clear document names.
-Bad: "According to research[1][2][3]..."
-Good: "According to nmap documentation (https://nmap.org/book/)..."
-Good: "Source: RFC 793 (TCP specification)"
 
-REMEMBER: LEARN MODE is about education. Be thorough, accurate, and cite sources with FULL URLs or document names."#.to_string()
+At the very END of your response, after ALL content, include sources in this EXACT format:
+
+[SOURCES]
+- Description: Full URL
+- Description: Full URL
+
+Keep your main response body clean. Save ALL source URLs for the [SOURCES] section at the very end.
+
+REMEMBER: LEARN MODE is about education. Be thorough, accurate, and cite sources with FULL URLs in the [SOURCES] section at the end."#.to_string()
     }
 
     /// Run a one-shot query (non-interactive)
