@@ -1,30 +1,23 @@
 # Cyx: Your Cybersecurity Companion in Command
 
-**Cyx** is a fast, terminal-based cybersecurity companion that instantly retrieves commands, documentation, and practical techniques for hacking, penetration testing, and security research. It searches trusted sources like HackTricks, PayloadsAllTheThings, OWASP, and official tool documentation to provide concise answers, real-world examples, and recommended workflows for common offensive security tasks.
+**Cyx** is a fast, terminal-based cybersecurity companion that instantly provides commands, techniques, and practical guidance for hacking, penetration testing, and security research. Powered by advanced language models, Cyx delivers concise, command-first responses optimized for security practitioners who need answers fast.
 
 ## Features
 
-- **[X] Smart Search**: Searches DuckDuckGo and prioritizes trusted cybersecurity sources
-- **[X] AI-Powered**: Uses LLMs (Groq, Perplexity) to analyze results and provide precise answers
-- **[X] Trusted Sources**: Fetches content from HackTricks, PayloadsAllTheThings, OWASP, GTFOBins, and more
+- **[X] LLM-Powered**: Uses advanced language models (Perplexity, Groq) for instant command lookup
+- **[X] Command-First**: Executable commands before explanations - zero fluff
 - **[X] Interactive Mode**: Conversational interface with context awareness and follow-up questions
-- **[X] Fast**: Written in Rust for maximum performance
-- **[X] Beautiful CLI**: Clean tables and formatted output for easy reading
+- **[X] Fast**: Written in Rust for maximum performance (2-5 second average response time)
+- **[X] Pentester-Optimized**: System prompt assumes authorization, no ethics disclaimers
+- **[X] Beautiful CLI**: Clean formatted output for easy reading
 - **[X] Secure**: API keys stored with 600 permissions in local config
 
-## Trusted Sources
+## LLM Providers
 
-Cyx prioritizes content from these trusted cybersecurity resources:
+Cyx supports two high-performance LLM providers:
 
-- [HackTricks](https://book.hacktricks.xyz)
-- [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings)
-- [OWASP](https://owasp.org)
-- [GTFOBins](https://gtfobins.github.io)
-- [LOLBAS](https://lolbas-project.github.io)
-- [Exploit Database](https://exploit-db.com)
-- [PentestMonkey](https://pentestmonkey.net)
-- [HackingArticles](https://hackingarticles.in)
-- [Red Team Notes](https://ired.team)
+- **Perplexity** (`sonar-pro`) - Fast responses with excellent cybersecurity knowledge
+- **Groq** (`llama-3.3-70b-versatile`) - Very fast inference with free tier available
 
 ## Installation
 
@@ -89,7 +82,6 @@ cyx "privilege escalation with sudo"
 ```
 cyx> /help      # Show available commands
 cyx> /clear     # Clear conversation history
-cyx> /sources   # Show recently fetched sources
 cyx> /exit      # Exit the session
 ```
 
@@ -124,30 +116,25 @@ cyx config get config_path
 Edit `~/.config/cyx/config.toml`:
 
 ```toml
-[provider]
 provider = "groq"  # or "perplexity"
 
 [api_keys]
-groq = "your-groq-api-key"
-perplexity = "your-perplexity-api-key"
-
-[search]
-max_results = 5
-timeout_seconds = 30
-trusted_sources = [
-    "book.hacktricks.xyz",
-    "github.com/swisskyrepo/PayloadsAllTheThings",
-    # ... more sources
-]
+groq_api_key = "your-groq-api-key"
+perplexity_api_key = "your-perplexity-api-key"
 ```
 
 ## How It Works
 
-1. **Search**: User query is sent to DuckDuckGo API
-2. **Filter**: Results are analyzed and trusted sources are identified
-3. **Fetch**: Content from trusted sources is downloaded and converted to markdown
-4. **Analyze**: LLM reads the content and synthesizes a comprehensive answer
-5. **Display**: Results are formatted and displayed in a clean, organized manner
+1. **User Query**: Your question is sent to Cyx
+2. **System Prompt**: Query is augmented with pentester-optimized instructions
+3. **LLM Processing**: Provider (Perplexity or Groq) generates command-first response
+4. **Format & Display**: Results are formatted and displayed in a clean manner
+
+The system prompt explicitly:
+- Assumes user authorization (no disclaimers needed)
+- Enforces COMMAND-FIRST responses (executable code before explanations)
+- Targets professional pentesters and security students
+- Prioritizes practical execution over theory
 
 ## Example Queries
 
@@ -182,12 +169,15 @@ cyx/
 ├── src/
 │   ├── cli/          # CLI argument parsing and command handling
 │   ├── config/       # Configuration management
-│   ├── llm/          # LLM provider implementations
-│   ├── search/       # DuckDuckGo search and content fetching
+│   ├── llm/          # LLM provider implementations (Perplexity, Groq)
 │   ├── session/      # Interactive session handler
 │   ├── ui/           # Display and formatting
 │   ├── lib.rs
 │   └── main.rs
+├── docs/
+│   ├── FEATURES.md
+│   ├── TESTING.md
+│   └── FULL_README.md
 ├── Cargo.toml
 ├── LICENSE
 └── README.md
@@ -237,10 +227,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- HackTricks, PayloadsAllTheThings, OWASP, and all the amazing cybersecurity community resources
-- Groq and Perplexity for their LLM APIs
-- The Rust community for excellent crates and tools
+- Groq and Perplexity for their excellent LLM APIs
+- The Rust community for outstanding crates and tools
+- The cybersecurity community for continuous knowledge sharing
 
 ---
 
-**Stay curious, stay ethical, stay secure.** [X][X]
+**Cyx: Fast. Direct. Built for pentesters.**

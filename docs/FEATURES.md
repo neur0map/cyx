@@ -1,95 +1,95 @@
 # Cyx Features & Capabilities
 
-## [X] Core Features
+## Core Features
 
-### 1. **Straight-to-the-Point Responses**
-Cyx is designed for speed and efficiency:
-- **Commands FIRST** - No theory, just the command you need
-- **Brief explanations** - 1-2 sentences max
-- **Code blocks** - All commands properly formatted
-- **Citations** - References to official documentation
+### 1. **LLM-Powered Command Lookup**
+Cyx uses advanced language models to provide instant cybersecurity commands:
+- **Perplexity sonar-pro** - Built-in web search for latest techniques
+- **Groq llama-3.3-70b** - Fast inference with extensive knowledge base
+- **Optimized prompts** - Tuned specifically for pentesting workflows
 
-Example query: "nmap stealth scan"
+### 2. **Command-First Philosophy**
+Designed for professionals under time pressure:
+- **Commands FIRST** - Executable code before explanations
+- **Zero fluff** - No "Certainly!", no pleasantries
+- **1-2 sentence max** - Brief, actionable explanations
+- **Code blocks** - Properly formatted bash/python/powershell
+
+Example response:
 ```bash
 nmap -sS <target>
 ```
--sS performs a TCP SYN (stealth) scan. Root privileges required.
+TCP SYN scan - doesn't complete handshake, harder to detect. Requires root.
 
-### 2. **Cybersecurity-Optimized**
-Built specifically for:
-- Penetration testing
-- Ethical hacking
-- CTF competitions
-- Security research
-- Red team operations
-- Bug bounty hunting
+### 3. **Pentester-Optimized System Prompt**
+The system prompt explicitly:
+- Assumes user authorization (no disclaimers)
+- Targets pentesters and security students
+- Prioritizes practical execution over theory
+- Includes ethical context (authorized testing, CTFs, labs)
+- Focuses on command delivery speed
 
-### 3. **LLM Provider Support**
-
-| Provider | Model | Speed | Features |
-|----------|-------|-------|----------|
-| **Perplexity** | sonar-pro | [X] Fast | Built-in web search, excellent citations |
-| **Groq** | llama-3.3-70b-versatile | [X][X] Very Fast | Free tier, great for offline knowledge |
-
-**Recommendation:** Use Perplexity for best results - it has web search built into the model.
-
-### 4. **CLI Flags for Power Users**
+### 4. **CLI Flags for Efficiency**
 
 ```bash
 # Quiet mode - only show the answer
 cyx -q "reverse shell one liner"
 
-# Verbose mode - show all details
+# Verbose mode - show detailed progress
 cyx -v "sql injection"
 
 # No-TTY mode - for scripting/automation
 cyx --no-tty "privilege escalation"
-
-# Skip web search - use LLM knowledge only
-cyx --no-search "metasploit"
-
-# Limit search results
-cyx --max-results 3 "buffer overflow"
 ```
 
-### 5. **Secure Configuration**
+### 5. **Interactive & One-Shot Modes**
+
+**Interactive Mode:**
+```bash
+cyx
+cyx> nmap stealth scan
+# Get response...
+cyx> what about service detection?
+# Follow-up question with context
+cyx> /exit
+```
+
+**One-Shot Queries:**
+```bash
+cyx "hydra ssh brute force"
+cyx "sqlmap basic usage"
+```
+
+### 6. **Secure Configuration**
 - API keys stored in `~/.config/cyx/config.toml`
 - File permissions: `600` (owner read/write only)
 - No environment variables needed
-- Set once, use forever
+- Simple setup wizard: `cyx setup`
 
-### 6. **Easy Setup**
-```bash
-# One command setup
-cyx setup
+## LLM Provider Comparison
 
-# Enter your API key when prompted
-# That's it! Start using immediately
-cyx "your query"
-```
+| Provider | Model | Speed | Best For |
+|----------|-------|-------|----------|
+| **Perplexity** | sonar-pro | Fast | Latest techniques (built-in web search) |
+| **Groq** | llama-3.3-70b-versatile | Very Fast | Quick lookups, offline scenarios |
 
-## [X] Security Features
+**Recommendation:** Perplexity for up-to-date techniques, Groq for speed.
 
-### Prompt Injection Protection
-Cyx sanitizes all web content to prevent malicious prompts:
-- Removes "ignore previous instructions" patterns
-- Blocks role manipulation attempts
-- Prevents DoS via content repetition
-- Limits content size (12k chars max per source)
+## Security Features
 
-### Resource Limits
-- HTTP timeouts (30s search, 120s LLM)
-- Redirect limits (max 10)
-- Token limits (8000 max per request)
-- Fetch limits (max 3 sources per query)
+### Secure Key Storage
+- API keys stored with 600 permissions
+- Config location: `~/.config/cyx/config.toml`
+- Keys never logged or displayed
+- No hardcoded credentials
 
-### Secure API Communication
-- HTTPS only
-- Proper timeout handling
-- Error messages never expose API keys
-- Sandboxed HTML parsing
+### Safe Defaults
+- **No execution** - Provides commands, doesn't run them
+- **Read-only** - Never modifies system
+- **Timeout limits** - 120s max per API call
+- **Local only** - All data stays on your machine
 
-## [X] Performance
+## Performance
 
 | Metric | Value |
 |--------|-------|
@@ -98,7 +98,21 @@ Cyx sanitizes all web content to prevent malicious prompts:
 | Memory usage | ~50MB |
 | Startup time | <100ms |
 
-## [X] Example Queries
+## Knowledge Areas
+
+Cyx system prompt prioritizes:
+- **Network scanning** - nmap, masscan, rustscan
+- **Web application testing** - burp, sqlmap, ffuf, gobuster
+- **Password attacks** - hydra, john, hashcat, crackmapexec
+- **Exploitation** - metasploit, msfvenom, exploit-db
+- **Post-exploitation** - mimikatz, bloodhound, winPEAS, linPEAS
+- **Privilege escalation** - GTFOBins, LOLBAS, sudo, SUID
+- **Active Directory** - bloodhound, powerview, rubeus
+- **Wireless** - aircrack-ng, wifite, kismet
+- **Reverse engineering** - ghidra, radare2, gdb
+- **OSINT** - amass, subfinder, theHarvester
+
+## Example Queries
 
 ### Reconnaissance
 ```bash
@@ -109,16 +123,14 @@ cyx "amass subdomain discovery"
 
 ### Web Application Security
 ```bash
-cyx "sqlmap automated sql injection"
+cyx "sqlmap automated injection"
 cyx "burp suite intruder"
 cyx "xss bypass csp"
-cyx "jwt token manipulation"
 ```
 
 ### Privilege Escalation
 ```bash
 cyx "linux privilege escalation checklist"
-cyx "windows privilege escalation techniques"
 cyx "sudo gtfobins"
 cyx "suid binaries exploitation"
 ```
@@ -128,76 +140,32 @@ cyx "suid binaries exploitation"
 cyx "hydra ssh brute force"
 cyx "john the ripper hashcat"
 cyx "crack wifi wpa2"
-cyx "responder ntlm relay"
 ```
 
-### Exploitation
-```bash
-cyx "metasploit reverse shell"
-cyx "msfvenom payload generation"
-cyx "buffer overflow exploit development"
-cyx "rop chain creation"
-```
+## Response Quality
 
-### Post-Exploitation
-```bash
-cyx "mimikatz dump credentials"
-cyx "bloodhound active directory"
-cyx "lateral movement techniques"
-cyx "persistence windows"
-```
+### What Cyx Does Well
+- Provides exact, copy-paste commands
+- Explains when/why to use specific flags
+- Gives real-world context
+- Assumes you know the basics
 
-## [X][X] Usage Modes
+### What Cyx Avoids
+- Long theoretical explanations
+- Ethics lectures (assumes authorization)
+- Asking if you have permission
+- Tutorial-style walkthroughs
+- Unnecessary background information
 
-### 1. One-Shot Queries
-Perfect for quick lookups:
-```bash
-cyx "reverse shell bash"
-```
-
-### 2. Interactive Mode
-For deeper research with follow-up questions:
-```bash
-cyx
-# Enter interactive session
-cyx> how to crack zip files
-# Get response, ask follow-ups
-cyx> what about password-protected rar files?
-cyx> /exit
-```
-
-### 3. Quiet Mode (Scripting)
-For automation and pipelines:
-```bash
-cyx -q "command" | grep "specific output"
-```
-
-### 4. Verbose Mode (Debugging)
-See detailed progress:
-```bash
-cyx -v "complex query"
-```
-
-## 📋 Interactive Commands
+## Interactive Commands
 
 | Command | Purpose |
 |---------|---------|
 | `/exit` | Exit the session |
-| `/quit` | Same as /exit |
 | `/clear` | Clear conversation history |
 | `/help` | Show available commands |
-| `/sources` | Show recently fetched sources |
 
-## [X] Output Formatting
-
-Cyx provides beautiful, easy-to-read output:
-- **Color-coded** - Errors in red, success in green, info in cyan
-- **Tables** - Search results displayed in clean tables
-- **Code blocks** - Syntax highlighting for commands
-- **Sections** - Clear visual separation
-- **Emoji indicators** - Quick visual feedback ([X] [X] [X] [X] [X])
-
-## [X] Configuration Management
+## Configuration Management
 
 ```bash
 # Show current config
@@ -213,35 +181,24 @@ cyx config set perplexity_api_key YOUR_KEY
 
 # Get specific value
 cyx config get provider
-cyx config get config_path
 ```
 
-## [X] Target Audience
+## Use Cases
 
-### Perfect For:
-- [X] Penetration testers
-- [X] Security researchers
-- [X] CTF players
-- [X] Bug bounty hunters
-- [X] Red teamers
-- [X] Students learning cybersecurity
-- [X] Anyone needing quick command reference
+### Perfect For
+- Penetration testers needing fast command lookup
+- Security students learning offensive techniques
+- CTF players looking for quick references
+- Red teamers during engagements
+- Bug bounty hunters testing targets
 
-### Not Designed For:
-- [X] General programming questions (use GitHub Copilot)
-- [X] Lengthy theoretical explanations (use ChatGPT)
-- [X] Code generation (use Cursor/Copilot)
+### Not Designed For
+- General programming questions
+- Lengthy code generation
+- Theoretical security discussions
+- Legal/policy advice
 
-## [X] Pro Tips
-
-1. **Use Perplexity for latest techniques** - It searches the web in real-time
-2. **Use Groq for offline knowledge** - Faster, no web dependency
-3. **Combine with other tools** - Pipe output to grep, awk, etc.
-4. **Save common queries** - Create shell aliases for frequent tasks
-5. **Use --quiet in scripts** - Clean output for automation
-6. **Use --verbose when learning** - See how it works under the hood
-
-## [X] Integration Examples
+## Integration Examples
 
 ### Shell Alias
 ```bash
@@ -249,85 +206,44 @@ cyx config get config_path
 alias hack='cyx -q'
 
 # Usage
-hack "sql injection cheatsheet"
+hack "nmap scan types"
 ```
 
 ### Script Integration
 ```bash
 #!/bin/bash
-# Get nmap command for specific scan type
-SCAN_CMD=$(cyx --no-tty --quiet "nmap $1 scan" | grep "^nmap")
-eval "$SCAN_CMD $2"
+# Get command from Cyx and execute
+CMD=$(cyx --no-tty -q "nmap quick scan" | grep "^nmap")
+eval "$CMD 192.168.1.1"
 ```
 
-### Pipeline Usage
-```bash
-# Extract just the command
-cyx -q "hydra ssh brute force" | grep -o "^hydra.*"
-```
+## System Requirements
 
-## [X] Comparison with Alternatives
+- **OS**: Linux, macOS, Windows (with Rust)
+- **Rust**: 1.70+
+- **Storage**: ~10MB (including dependencies)
+- **Memory**: ~50MB runtime
+- **Network**: Internet connection for LLM API
 
-| Feature | Cyx | Manual Googling | ChatGPT | Security-specific tools |
-|---------|-----|-----------------|---------|------------------------|
-| Speed | [X][X][X] | [X] | [X][X] | [X][X] |
-| Accuracy | [X] | ❓ | [X] | [X] |
-| Citations | [X] | [X] | [X] | Sometimes |
-| Offline mode | [X] | [X] | [X] | Sometimes |
-| Concise | [X] | [X] | [X] | [X] |
-| CLI | [X] | [X] | [X] | [X] |
-| Free tier | [X] | [X] | [X] | Varies |
+## Ethical Use
 
-## [X] Learning with Cyx
+Cyx assumes all usage is for:
+- Authorized penetration testing engagements
+- Capture The Flag (CTF) competitions
+- Educational purposes in controlled labs
+- Security research with proper authorization
+- Defensive security understanding
 
-Cyx is excellent for learning:
-```bash
-# Learn nmap basics
-cyx "nmap beginner guide"
+**Never use on systems without explicit authorization.**
 
-# Learn specific technique
-cyx "how does sql injection work"
+## Future Considerations
 
-# Compare techniques
-cyx "hydra vs medusa vs ncrack"
-
-# Get cheat sheets
-cyx "metasploit cheat sheet"
-```
-
-## [X] Getting Started (Quick)
-
-```bash
-# 1. Build and install
-cargo install --path .
-
-# 2. Setup
-cyx setup
-
-# 3. Start hacking
-cyx "your query"
-```
-
-## [X][X] Ethics & Legal
-
-**IMPORTANT:** Cyx assumes you have proper authorization for all security testing.
-
-- [X] Use on systems you own
-- [X] Use in authorized penetration tests
-- [X] Use in lab environments
-- [X] Use for education (CTFs, courses)
-- [X] Never use on systems without permission
-- [X] Never use for malicious purposes
-
-## [X] Future Enhancements (Potential)
-
-- [ ] Local LLM support (Ollama integration)
-- [ ] Custom trusted sources
-- [ ] Query history/favorites
-- [ ] Export results to markdown/PDF
-- [ ] Integration with Metasploit/Burp Suite APIs
-- [ ] Multi-language support
+The system prompt and architecture are designed to be:
+- **Extensible** - Easy to add new LLM providers
+- **Maintainable** - Clean codebase, well-documented
+- **Flexible** - System prompt can be tuned per user needs
+- **Fast** - Optimized for quick responses
 
 ---
 
-**Cyx: Fast. Secure. Straight to the point. [X][X]**
+**Cyx: Fast. Direct. Built for pentesters.**

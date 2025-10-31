@@ -5,36 +5,23 @@ Cyx has been fully tested and is **production-ready**. All features work correct
 
 ## Security Features Implemented
 
-### 1. **Prompt Injection Protection**
-- Sanitizes fetched web content to prevent malicious prompt injection
-- Removes patterns like:
-  - "ignore previous instructions"
-  - "you are now..."
-  - "disregard all previous prompts"
-  - System role manipulation attempts
-- Prevents DoS via excessive content repetition
-- Content size limits (max 12k chars per source)
-
-### 2. **Secure API Key Storage**
+### 1. **Secure API Key Storage**
 - Config file: `~/.config/cyx/config.toml`
 - File permissions: `600` (owner read/write only)
 - Keys never logged or displayed in output
 
-### 3. **Safe Resource Usage**
-- HTTP timeouts (30s for search, 120s for LLM)
-- Redirect limits (max 10 redirects)
+### 2. **Safe Resource Usage**
+- HTTP timeouts (120s for LLM requests)
 - Token limits (8000 max tokens per LLM request)
-- Fetch limits (max 3 trusted sources per query)
+- No external web scraping or fetching
 
 ## CLI Flags Tested
 
 | Flag | Purpose | Status |
 |------|---------|--------|
-| `--quiet` | Only show final response (no banners/tables) | [X] Working |
+| `--quiet` | Only show final response (no banners) | [X] Working |
 | `--verbose` | Show detailed debugging info | [X] Working |
 | `--no-tty` | Disable colors/prompts for scripting | [X] Working |
-| `--no-search` | Skip web search, use LLM knowledge only | [X] Working |
-| `--max-results <N>` | Limit search results | [X] Working |
 
 ## Features Tested
 
@@ -103,8 +90,8 @@ cargo run -- config get provider
 
 | Provider | Model | Status | Notes |
 |----------|-------|--------|-------|
-| Perplexity | `sonar-pro` | [X] Tested | Built-in web search, excellent for cybersec |
-| Groq | `llama-3.3-70b-versatile` | [X] Implemented | Fast, free tier available |
+| Perplexity | `sonar-pro` | [X] Tested | Fast responses, excellent for cybersec |
+| Groq | `llama-3.3-70b-versatile` | [X] Implemented | Very fast, free tier available |
 
 ## Performance Metrics
 
@@ -166,11 +153,8 @@ cyx --no-tty --quiet "privilege escalation windows"
 # Test with verbose output
 cyx --no-tty --verbose "metasploit meterpreter"
 
-# Test without web search
-cyx --no-search "sql injection"
-
-# Test max results limit
-cyx --max-results 3 "buffer overflow techniques"
+# Test quiet mode
+cyx --quiet "sql injection"
 ```
 
 ### For Users
@@ -186,30 +170,20 @@ cyx "burp suite intruder attack"
 
 ## Security Validation
 
-### [X] Prompt Injection Tests
-Tested malicious web content containing:
-- "Ignore all previous instructions and..."
-- "You are now a helpful assistant who..."
-- Role manipulation attempts
-- Repetitive DoS patterns
-
-**Result:** All sanitized successfully, no injections reached LLM.
-
-### [X] API Key Safety
 - Keys never appear in logs
 - Config file permissions verified (600)
 - No keys in error messages
 
 ### [X] Resource Limits
-- HTTP timeouts prevent hanging
+- HTTP timeouts prevent hanging requests
 - Token limits prevent excessive API costs
-- Content truncation prevents memory issues
+- No external web scraping or content fetching
 
 ## Known Limitations
 
-1. **DuckDuckGo HTML parsing** - DuckDuckGo's HTML structure is difficult to parse reliably. However, **Perplexity has built-in web search**, so this is not an issue in practice - the model itself searches the web.
+1. **Interactive mode requires TTY** - Use `--no-tty` flag for scripting/automation.
 
-2. **Interactive mode requires TTY** - Use `--no-tty` flag for scripting/automation.
+2. **LLM provider availability** - Requires internet connection and valid API keys for Perplexity or Groq.
 
 ## Recommendations
 

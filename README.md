@@ -4,7 +4,7 @@ Fast, terminal-based cybersecurity companion for penetration testing and securit
 
 ## What is Cyx?
 
-Cyx retrieves commands, documentation, and techniques from trusted sources like HackTricks, PayloadsAllTheThings, and OWASP. It uses LLMs to provide concise, actionable answers directly in your terminal.
+Cyx is an LLM-powered command companion that provides instant, concise cybersecurity commands and techniques. Built specifically for penetration testers and security students, it delivers command-first responses optimized for practical use in the field.
 
 ## Quick Start
 
@@ -24,40 +24,30 @@ cyx "linux privilege escalation"
 ## How It Works
 
 ```mermaid
-graph TD
-    A[User Query] --> B{Search Mode?}
-    B -->|Web Search| C[DuckDuckGo API]
-    B -->|No Search| G[LLM Direct]
-    C --> D[Filter Trusted Sources]
-    D --> E{Trusted Content?}
-    E -->|Yes| F[Fetch & Convert to Markdown]
-    E -->|No| G
-    F --> H[Sanitize Content]
-    H --> I[Remove Prompt Injections]
-    I --> J[Build Context]
-    J --> K[LLM Provider]
-    G --> K
-    K --> L{Provider}
-    L -->|Perplexity| M[sonar-pro Model]
-    L -->|Groq| N[llama-3.3-70b Model]
-    M --> O[Generate Response]
-    N --> O
-    O --> P[Format Output]
-    P --> Q[Display to User]
+graph LR
+    A[User Query] --> B[System Prompt]
+    B --> C{LLM Provider}
+    C -->|Perplexity| D[sonar-pro<br/>Built-in Web Search]
+    C -->|Groq| E[llama-3.3-70b<br/>Knowledge Base]
+    D --> F[Command-First Response]
+    E --> F
+    F --> G[Format & Display]
 
-    style H fill:#ff6b6b
-    style I fill:#ff6b6b
-    style K fill:#4ecdc4
-    style Q fill:#95e1d3
+    style B fill:#4ecdc4
+    style D fill:#95e1d3
+    style E fill:#95e1d3
+    style F fill:#ffd93d
+    style G fill:#6bcf7f
 ```
 
 ## Features
 
-- **Fast responses** - 2-5 seconds average
-- **Secure** - API keys stored with 600 permissions
-- **Concise output** - Commands first, brief explanations
-- **Trusted sources** - HackTricks, PayloadsAllTheThings, OWASP, GTFOBins
-- **Interactive mode** - Follow-up questions with context
+- **Fast responses** - 2-5 seconds average with optimized LLM queries
+- **Secure** - API keys stored with 600 permissions in local config
+- **Command-first** - Executable commands before explanations
+- **Pentester-optimized** - System prompts tuned for security professionals
+- **Dual LLM support** - Perplexity (built-in web search) or Groq (fast inference)
+- **Interactive mode** - Conversation history for follow-up questions
 - **CLI flags** - Quiet, verbose, no-tty modes for scripting
 
 ## Installation
@@ -126,30 +116,25 @@ nmap -sS <target>
 ## Security
 
 Cyx implements multiple security measures:
-- **Prompt injection protection** - Sanitizes web content
-- **Secure key storage** - 600 file permissions
-- **Resource limits** - Timeouts, content size limits
-- **Safe defaults** - No execution, read-only operations
+- **Secure key storage** - API keys stored with 600 file permissions
+- **No execution** - Read-only, provides commands but doesn't execute them
+- **Timeout limits** - API calls timeout after 120 seconds
+- **Local config only** - All sensitive data stays on your machine
 
-See [docs/TESTING.md](docs/TESTING.md) for security validation details.
+## System Prompt
+
+Cyx uses a carefully crafted system prompt that:
+- Assumes user authorization for all pentesting activities
+- Prioritizes command-first responses (no fluff)
+- Targets professional pentesters and security students
+- Provides practical, executable commands
+- Includes ethical context (authorized testing, CTFs, education)
 
 ## Documentation
 
 - [Full Documentation](docs/FULL_README.md)
 - [Features](docs/FEATURES.md)
 - [Testing Report](docs/TESTING.md)
-
-## Trusted Sources
-
-- HackTricks
-- PayloadsAllTheThings
-- OWASP
-- GTFOBins
-- LOLBAS
-- Exploit Database
-- PentestMonkey
-- HackingArticles
-- Red Team Notes
 
 ## License
 
