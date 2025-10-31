@@ -51,11 +51,31 @@ Returns:
 - Example usage with actual syntax
 - Sources cited (nmap docs, RFC 793, etc.)
 
-### 5. **Source Tracking**
-**NEW:** Every response shows source information:
+### 5. **Streaming Responses**
+**NEW:** Real-time response streaming with progress indicators:
+- **SSE streaming** - Server-Sent Events for live updates
+- **Progress tracking** - Animated spinner with character count
+- **Boxed formatting** - Clean Unicode box drawing for responses
+- **Fast feedback** - See responses as they generate
+
+Example:
+```
+⠹ Streaming... 437 chars [2s]
+
+╭─── RESPONSE ──────────────────────────────────────────────
+│ ```bash
+│ nmap -sS <target>
+│ ```
+│ TCP SYN stealth scan - doesn't complete handshake. Requires root.
+╰──────────────────────────────────────────────────────────
+```
+
+### 6. **Source Tracking with Links**
+**NEW:** Every response shows detailed source information:
 - **Provider name** - Perplexity or Groq
 - **Model name** - sonar-pro or llama-3.3-70b-versatile
 - **Search capability** - Web search vs knowledge base only
+- **Source links** - Full URLs extracted and displayed
 
 Example output:
 ```
@@ -63,11 +83,15 @@ Example output:
 ───────────────────────────────────────
 Provider: Perplexity (sonar-pro)
 Search: Yes (performed web search)
+
+Links:
+  - nmap documentation: https://nmap.org/book/
+  - RFC 793 (TCP): https://www.ietf.org/rfc/rfc793.txt
 ```
 
-This transparency shows whether the AI performed web research or used its knowledge base.
+This transparency shows whether the AI performed web research and provides clickable source URLs.
 
-### 6. **CLI Flags for Efficiency**
+### 7. **CLI Flags for Efficiency**
 
 ```bash
 # Quiet mode - only show the answer (no headers/sources)
@@ -84,7 +108,7 @@ cyx -l "nmap stealth scan"
 cyx --learn "sqlmap basic usage"
 ```
 
-### 7. **Interactive & One-Shot Modes**
+### 8. **Interactive & One-Shot Modes**
 
 **Interactive Mode:**
 ```bash
@@ -102,7 +126,7 @@ cyx "hydra ssh brute force"           # Normal mode
 cyx --learn "sqlmap basic usage"      # Learn mode
 ```
 
-### 8. **Secure Configuration**
+### 9. **Secure Configuration**
 - API keys stored in `~/.config/cyx/config.toml`
 - File permissions: `600` (owner read/write only)
 - No environment variables needed
@@ -139,6 +163,7 @@ cyx --learn "sqlmap basic usage"      # Learn mode
 | Average query time | 2-5 seconds |
 | Memory usage | ~50MB |
 | Startup time | <100ms |
+| Streaming latency | <1s to first token |
 
 ## Knowledge Areas
 
