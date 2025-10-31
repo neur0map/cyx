@@ -1,21 +1,18 @@
 # Cyx: Your Cybersecurity Companion in Command
 
-**Cyx** is a fast, terminal-based cybersecurity companion that instantly provides commands, techniques, and practical guidance for hacking, penetration testing, and security research. Powered by advanced language models, Cyx delivers concise, command-first responses optimized for security practitioners who need answers fast.
+**Cyx** is a fast, terminal-based cybersecurity companion that instantly provides commands, techniques, and practical guidance for hacking, penetration testing, and security research. Uses Perplexity or Groq for LLM inference.
 
 ## Features
 
-- LLM-Powered: Uses advanced language models (Perplexity, Groq) for instant command lookup
-- Command-First: Executable commands before explanations - zero fluff
+- Command-First: Executable commands before explanations
 - Fast: Written in Rust for maximum performance (2-5 second average response time)
 - Pentester-Optimized: System prompt assumes authorization, no ethics disclaimers
 - Secure: API keys stored with 600 permissions in local config
 
-## LLM Providers
+## Supported Providers
 
-Cyx supports two high-performance LLM providers:
-
-- **Perplexity** (`sonar-pro`) - Fast responses with excellent cybersecurity knowledge
-- **Groq** (`llama-3.3-70b-versatile`) - Very fast inference with free tier available
+- **Perplexity** (`sonar-pro`) - Built-in web search for latest techniques
+- **Groq** (`llama-3.3-70b-versatile`) - Fast inference with free tier available
 
 ## Installation
 

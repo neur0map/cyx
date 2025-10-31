@@ -2,15 +2,13 @@
 
 > Command-first cybersecurity companion for penetration testers and security researchers
 
-Cyx is an LLM-powered terminal tool that delivers instant, executable security commands. Built for speed and accuracy, it provides command-first answers optimized for professionals in the field.
+Cyx is an LLM-powered terminal tool that delivers instant, executable security commands. Supports Perplexity (web search) and Groq (fast inference).
 
 ## Features
 
 - **Command-first output** - executable commands before explanations
 - **Learn mode** - detailed educational breakdowns with sources
 - **Source attribution** - tracks provider, model, and web search status
-- **Dual LLM support** - Perplexity (web search) or Groq (fast inference)
-- **Flexible output modes** - quiet, verbose, no-tty for scripting
 
 ## Quick Start
 
