@@ -15,20 +15,15 @@ impl CommandHandler {
             Some(Commands::Setup) => {
                 Self::setup(&context)?;
             }
-            Some(Commands::Interactive) => {
-                Self::interactive(context)?;
-            }
             Some(Commands::Config { action }) => {
                 Self::config(action)?;
             }
             None => {
-                // No subcommand specified
+                // No subcommand specified - require query
                 if let Some(query_text) = query {
-                    // One-shot mode
                     Self::one_shot(&query_text, context)?;
                 } else {
-                    // Default to interactive mode
-                    Self::interactive(context)?;
+                    anyhow::bail!("No query provided. Usage: cyx \"your query here\"");
                 }
             }
         }
@@ -38,13 +33,6 @@ impl CommandHandler {
 
     fn setup(_context: &CliContext) -> Result<()> {
         ConfigManager::interactive_setup()?;
-        Ok(())
-    }
-
-    fn interactive(context: CliContext) -> Result<()> {
-        let config = Self::load_or_setup_config()?;
-        let mut session = InteractiveSession::new(config, context)?;
-        session.run()?;
         Ok(())
     }
 

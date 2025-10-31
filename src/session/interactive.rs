@@ -5,13 +5,10 @@ use crate::{
     ui::Display,
 };
 use anyhow::Result;
-use colored::Colorize;
-use std::io::{self, BufRead};
 
 pub struct InteractiveSession {
     context: CliContext,
     provider: Box<dyn LLMProvider>,
-    conversation_history: Vec<Message>,
 }
 
 impl InteractiveSession {
@@ -36,77 +33,17 @@ impl InteractiveSession {
             }
         };
 
-        // Initialize conversation with system prompt
-        let system_prompt = if context.learn {
-            Self::create_learn_system_prompt()
-        } else {
-            Self::create_system_prompt()
-        };
-        let conversation_history = vec![Message::system(system_prompt)];
-
-        Ok(Self {
-            context,
-            provider,
-            conversation_history,
-        })
+        Ok(Self { context, provider })
     }
 
-    pub fn run(&mut self) -> Result<()> {
-        // Show banner and help only if not in quiet mode
-        if self.context.should_show_decorations() {
-            Display::banner();
-            println!("{} {}", "Provider:".dimmed(), self.provider.name().cyan());
-            Display::interactive_help();
-        }
-
-        let stdin = io::stdin();
-        let mut reader = stdin.lock();
-
-        loop {
-            if self.context.should_show_decorations() {
-                Display::prompt();
-            }
-
-            let mut input = String::new();
-            reader.read_line(&mut input)?;
-            let input = input.trim();
-
-            if input.is_empty() {
-                continue;
-            }
-
-            // Handle commands
-            match input {
-                "/exit" | "/quit" => {
-                    if self.context.should_show_progress() {
-                        Display::info("Goodbye!");
-                    }
-                    break;
-                }
-                "/clear" => {
-                    self.clear_history();
-                    if self.context.should_show_progress() {
-                        Display::success("Conversation history cleared");
-                    }
-                    continue;
-                }
-                "/help" => {
-                    Display::interactive_help();
-                    continue;
-                }
-                _ => {}
-            }
-
-            // Process the query
-            if let Err(e) = self.process_query(input) {
-                Display::error(&format!("Error: {}", e));
-            }
-        }
-
+    /// Run a one-shot query (non-interactive)
+    pub fn one_shot(config: Config, query: &str, context: CliContext) -> Result<()> {
+        let session = Self::new(config, context)?;
+        session.process_query(query)?;
         Ok(())
     }
 
-    fn process_query(&mut self, query: &str) -> Result<()> {
+    fn process_query(&self, query: &str) -> Result<()> {
         use std::sync::{Arc, Mutex};
 
         // Create progress bar
@@ -116,8 +53,14 @@ impl InteractiveSession {
             None
         };
 
-        // Send query with streaming
-        self.conversation_history.push(Message::user(query));
+        // Build conversation with system prompt
+        let system_prompt = if self.context.learn {
+            Self::create_learn_system_prompt()
+        } else {
+            Self::create_system_prompt()
+        };
+
+        let messages = vec![Message::system(system_prompt), Message::user(query)];
 
         let char_count = Arc::new(Mutex::new(0));
 
@@ -125,7 +68,7 @@ impl InteractiveSession {
         let char_count_clone = char_count.clone();
 
         let response = self.provider.send_message_stream(
-            &self.conversation_history,
+            &messages,
             Box::new(move |chunk| {
                 let mut count = char_count_clone.lock().unwrap();
                 *count += chunk.len();
@@ -143,8 +86,6 @@ impl InteractiveSession {
         if let Some(progress) = pb {
             progress.finish_and_clear();
         }
-
-        self.conversation_history.push(Message::assistant(&response));
 
         // Extract sources from response
         let (clean_response, source_links) = Self::extract_sources(&response);
@@ -170,15 +111,6 @@ impl InteractiveSession {
         Ok(())
     }
 
-    fn clear_history(&mut self) {
-        let system_prompt = if self.context.learn {
-            Self::create_learn_system_prompt()
-        } else {
-            Self::create_system_prompt()
-        };
-        self.conversation_history = vec![Message::system(system_prompt)];
-    }
-
     /// Extract sources from response and return (clean_response, sources_list)
     fn extract_sources(response: &str) -> (String, Vec<String>) {
         if let Some(sources_pos) = response.find("[SOURCES]") {
@@ -186,7 +118,8 @@ impl InteractiveSession {
 
             // Parse sources section
             let mut sources = Vec::new();
-            for line in sources_section.lines().skip(1) { // Skip "[SOURCES]" line
+            for line in sources_section.lines().skip(1) {
+                // Skip "[SOURCES]" line
                 let line = line.trim();
                 if line.starts_with('-') {
                     // Remove leading "- " and add to sources
@@ -455,12 +388,5 @@ At the very END of your response, after ALL content, include sources in this EXA
 Keep your main response body clean. Save ALL source URLs for the [SOURCES] section at the very end.
 
 REMEMBER: LEARN MODE is about education. Be thorough, accurate, and cite sources with FULL URLs in the [SOURCES] section at the end."#.to_string()
-    }
-
-    /// Run a one-shot query (non-interactive)
-    pub fn one_shot(config: Config, query: &str, context: CliContext) -> Result<()> {
-        let mut session = Self::new(config, context)?;
-        session.process_query(query)?;
-        Ok(())
     }
 }

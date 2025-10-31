@@ -36,9 +36,6 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Interactive mode (default)
-    Interactive,
-
     /// Configure Cyx settings
     Config {
         #[command(subcommand)]
