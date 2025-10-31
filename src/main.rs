@@ -11,6 +11,7 @@ fn main() {
         cli.quiet,
         cli.verbose,
         cli.no_tty,
+        cli.learn,
     );
 
     // Handle commands

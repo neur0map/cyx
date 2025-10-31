@@ -26,6 +26,10 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub no_tty: bool,
 
+    /// Learn mode - show detailed command explanations with flag breakdowns
+    #[arg(short, long, global = true)]
+    pub learn: bool,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }

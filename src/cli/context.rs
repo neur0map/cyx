@@ -4,14 +4,16 @@ pub struct CliContext {
     pub quiet: bool,
     pub verbose: bool,
     pub no_tty: bool,
+    pub learn: bool,
 }
 
 impl CliContext {
-    pub fn new(quiet: bool, verbose: bool, no_tty: bool) -> Self {
+    pub fn new(quiet: bool, verbose: bool, no_tty: bool, learn: bool) -> Self {
         Self {
             quiet,
             verbose,
             no_tty,
+            learn,
         }
     }
 
@@ -42,6 +44,7 @@ impl Default for CliContext {
             quiet: false,
             verbose: false,
             no_tty: false,
+            learn: false,
         }
     }
 }

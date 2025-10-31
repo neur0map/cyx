@@ -80,4 +80,31 @@ impl Display {
         use std::io::Write;
         std::io::stdout().flush().unwrap();
     }
+
+    /// Display source information for LLM response
+    pub fn sources(provider_name: &str, model_name: &str, searched: bool) {
+        println!("\n{}", "[*] SOURCES".cyan().bold());
+        println!("{}", "───────────────────────────────────────".cyan());
+        println!("{} {} ({})", "Provider:".dimmed(), provider_name.cyan(), model_name.dimmed());
+
+        let search_status = if searched {
+            "Yes (performed web search)".green()
+        } else {
+            "No (knowledge base only)".yellow()
+        };
+        println!("{} {}", "Search:".dimmed(), search_status);
+        println!();
+    }
+
+    /// Display learn mode separator
+    pub fn learn_mode_separator() {
+        println!("\n{}", "[LEARN MODE] Detailed Breakdown".yellow().bold());
+        println!("{}", "───────────────────────────────────────".yellow());
+    }
+
+    /// Display command result header
+    pub fn command_result_header() {
+        println!("\n{}", "[*] COMMAND RESULT".cyan().bold());
+        println!("{}", "───────────────────────────────────────".cyan());
+    }
 }

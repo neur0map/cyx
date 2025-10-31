@@ -78,4 +78,12 @@ impl LLMProvider for GroqProvider {
     fn name(&self) -> &str {
         "Groq"
     }
+
+    fn model(&self) -> &str {
+        "llama-3.3-70b-versatile"
+    }
+
+    fn searches_web(&self) -> bool {
+        false // Groq uses knowledge base only
+    }
 }

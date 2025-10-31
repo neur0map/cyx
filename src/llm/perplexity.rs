@@ -78,4 +78,12 @@ impl LLMProvider for PerplexityProvider {
     fn name(&self) -> &str {
         "Perplexity"
     }
+
+    fn model(&self) -> &str {
+        "sonar-pro"
+    }
+
+    fn searches_web(&self) -> bool {
+        true // Perplexity sonar-pro has built-in web search
+    }
 }
