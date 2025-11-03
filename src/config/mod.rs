@@ -85,7 +85,7 @@ fn default_embedding_model() -> String {
 }
 
 fn default_similarity_threshold() -> f32 {
-    0.80
+    0.90
 }
 
 fn default_cache_enabled() -> bool {
