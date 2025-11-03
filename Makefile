@@ -358,20 +358,79 @@ test-verbose: ## Run tests with verbose output
 	@$(CARGO) test --all --verbose -- --nocapture
 
 .PHONY: clean
-clean: ## Clean build artifacts
+clean: ## Complete system cleanup - removes ALL cyx files, config, cache, and models
+	@echo "$(RED)╔════════════════════════════════════════════════════════════╗$(RESET)"
+	@echo "$(RED)║$(RESET)  $(YELLOW)Complete Cyx System Cleanup$(RESET)                         $(RED)║$(RESET)"
+	@echo "$(RED)╚════════════════════════════════════════════════════════════╝$(RESET)"
+	@echo ""
+	@echo "$(YELLOW)⚠ WARNING: This will remove:$(RESET)"
+	@echo "  - Build artifacts (target/)"
+	@echo "  - Installed binary (~/.cargo/bin/cyx or /usr/local/bin/cyx)"
+	@echo "  - ONNX Runtime libraries"
+	@echo "  - Configuration (~/.config/cyx/)"
+	@echo "  - Cache and downloaded models (~/.cache/cyx/)"
+	@echo "  - System symlinks"
+	@echo ""
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		echo "$(BLUE)Step 1/6: Cleaning build artifacts...$(RESET)"; \
+		$(CARGO) clean && echo "$(GREEN)  ✓ Build artifacts removed$(RESET)" || true; \
+		rm -f cyx 2>/dev/null || true; \
+		echo ""; \
+		echo "$(BLUE)Step 2/6: Removing installed binary...$(RESET)"; \
+		if command -v cyx >/dev/null 2>&1; then \
+			INSTALL_PATH=$$(which cyx); \
+			rm -f "$$INSTALL_PATH" && echo "$(GREEN)  ✓ Removed: $$INSTALL_PATH$(RESET)" || echo "$(YELLOW)  ⚠ Failed to remove: $$INSTALL_PATH$(RESET)"; \
+		else \
+			echo "$(DIMMED)  Binary not found in PATH$(RESET)"; \
+		fi; \
+		rm -f ~/.cargo/bin/cyx 2>/dev/null && echo "$(GREEN)  ✓ Removed: ~/.cargo/bin/cyx$(RESET)" || true; \
+		rm -f /usr/local/bin/cyx 2>/dev/null && echo "$(GREEN)  ✓ Removed: /usr/local/bin/cyx$(RESET)" || true; \
+		echo ""; \
+		echo "$(BLUE)Step 3/6: Removing ONNX Runtime libraries...$(RESET)"; \
+		rm -f ~/.cargo/bin/libonnxruntime* 2>/dev/null && echo "$(GREEN)  ✓ Removed from ~/.cargo/bin/$(RESET)" || true; \
+		rm -f /usr/local/bin/libonnxruntime* 2>/dev/null && echo "$(GREEN)  ✓ Removed from /usr/local/bin/$(RESET)" || true; \
+		sudo rm -f /usr/local/lib/libonnxruntime* 2>/dev/null && echo "$(GREEN)  ✓ Removed from /usr/local/lib/$(RESET)" || true; \
+		echo ""; \
+		echo "$(BLUE)Step 4/6: Removing configuration...$(RESET)"; \
+		if [ -d ~/.config/cyx ]; then \
+			rm -rf ~/.config/cyx && echo "$(GREEN)  ✓ Removed: ~/.config/cyx/$(RESET)"; \
+		else \
+			echo "$(DIMMED)  No config directory found$(RESET)"; \
+		fi; \
+		echo ""; \
+		echo "$(BLUE)Step 5/6: Removing cache and models...$(RESET)"; \
+		if [ -d ~/.cache/cyx ]; then \
+			CACHE_SIZE=$$(du -sh ~/.cache/cyx 2>/dev/null | cut -f1); \
+			rm -rf ~/.cache/cyx && echo "$(GREEN)  ✓ Removed: ~/.cache/cyx/ ($$CACHE_SIZE)$(RESET)"; \
+		else \
+			echo "$(DIMMED)  No cache directory found$(RESET)"; \
+		fi; \
+		echo ""; \
+		echo "$(BLUE)Step 6/6: Removing symlinks...$(RESET)"; \
+		if [ -L "$(SYSTEM_SYMLINK)" ]; then \
+			sudo rm -f $(SYSTEM_SYMLINK) && echo "$(GREEN)  ✓ Removed: $(SYSTEM_SYMLINK)$(RESET)"; \
+		else \
+			echo "$(DIMMED)  No symlink found$(RESET)"; \
+		fi; \
+		echo ""; \
+		echo "$(GREEN)═══════════════════════════════════════════════════════════$(RESET)"; \
+		echo "$(GREEN)✓ Complete cleanup finished!$(RESET)"; \
+		echo "$(GREEN)═══════════════════════════════════════════════════════════$(RESET)"; \
+		echo ""; \
+		echo "$(CYAN)Cyx has been completely removed from your system.$(RESET)"; \
+		echo "$(DIMMED)To reinstall: make install$(RESET)"; \
+	else \
+		echo "$(YELLOW)Cleanup cancelled.$(RESET)"; \
+	fi
+
+.PHONY: clean-build
+clean-build: ## Clean only build artifacts (keeps config and cache)
 	@echo "$(YELLOW)Cleaning build artifacts...$(RESET)"
 	@$(CARGO) clean
 	@rm -f cyx 2>/dev/null || true
-	@echo "$(GREEN)✓ Clean complete!$(RESET)"
-	@echo "$(YELLOW)Note: System symlink at $(SYSTEM_SYMLINK) not removed$(RESET)"
-	@echo "$(YELLOW)Run 'make uninstall' to remove it$(RESET)"
-
-.PHONY: clean-all
-clean-all: clean ## Clean everything including config
-	@echo "$(YELLOW)Removing config file...$(RESET)"
-	@rm -f ~/.config/cyx/config.toml
-	@rmdir ~/.config/cyx 2>/dev/null || true
-	@echo "$(GREEN)✓ All artifacts and config removed!$(RESET)"
+	@echo "$(GREEN)✓ Build artifacts cleaned!$(RESET)"
 
 .PHONY: setup
 setup: build ## Build and run initial setup wizard
