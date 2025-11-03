@@ -64,9 +64,19 @@ impl CacheStorage {
                     Some(EmbedderType::Onnx(Box::new(onnx_emb)))
                 }
                 Err(e) => {
-                    eprintln!("⚠ ONNX model not found: {}", e);
-                    eprintln!("→ Falling back to simple embedder (256D)");
-                    eprintln!("→ Download model with: cyx download-model small");
+                    let error_msg = e.to_string();
+                    // Check if it's a library loading error
+                    if error_msg.contains("ONNX Runtime Library Not Found") {
+                        // Print the detailed error message
+                        eprintln!("{}", e);
+                        eprintln!("\n⚠️  Cyx will continue with degraded functionality.");
+                        eprintln!("   Semantic search will be unavailable.\n");
+                    } else {
+                        // It's a model not found error
+                        eprintln!("⚠ ONNX model not found: {}", e);
+                        eprintln!("→ Falling back to simple embedder (256D)");
+                        eprintln!("→ Download model with: cyx cache download-model small");
+                    }
                     Some(EmbedderType::Simple(Embedder::new_simple(
                         Embedder::get_default_dimensions(),
                     )))

@@ -1,6 +1,6 @@
 [package]
 name = "cyx"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["neur0map"]
 license = "MIT"
@@ -12,50 +12,47 @@ readme = "README.md"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.40", features = ["full"] }
+tokio = { version = "1.48", features = ["full"] }
 
 # HTTP client
-reqwest = { version = "0.12", features = ["json", "blocking", "stream"] }
+reqwest = { version = "0.12.24", features = ["json", "blocking", "stream"] }
 
 # CLI framework
-clap = { version = "4.5", features = ["derive", "cargo"] }
+clap = { version = "4.5.51", features = ["derive", "cargo"] }
 
 # Serialization
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
-toml = "0.8"
+toml = "0.9"
 
 # HTML to Markdown conversion
-html2text = "0.12"
+html2text = "0.16"
 
 # UI/Display
-comfy-table = "7.1"
+comfy-table = "7.2"
 colored = "2.1"
-dialoguer = "0.11"
-indicatif = "0.17"
+dialoguer = "0.12"
+indicatif = "0.18"
 
 # System paths
 directories = "5.0"
 
 # Error handling
-anyhow = "1.0"
-thiserror = "1.0"
+anyhow = "1.0.100"
 
 # Utilities
-regex = "1.10"
-url = "2.5"
-urlencoding = "2.1"
-html-escape = "0.2"
-unicode-width = "0.1"
+regex = "1.12"
+urlencoding = "2.1.3"
+html-escape = "0.2.13"
 
 # Cache & Database
-rusqlite = { version = "0.31", features = ["bundled"] }
-chrono = { version = "0.4", features = ["serde"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+chrono = { version = "0.4.42", features = ["serde"] }
 
 # Vector similarity with ONNX Runtime
 bincode = "1.3"
 ort = { version = "1.16", features = ["download-binaries"] }
-tokenizers = "0.19"
+tokenizers = "0.22"
 ndarray = "0.15"
 
 [dev-dependencies]

@@ -33,6 +33,53 @@ pub struct ONNXEmbedder {
 }
 
 impl ONNXEmbedder {
+    fn create_library_error() -> anyhow::Error {
+        let os = std::env::consts::OS;
+        let mut error_msg = String::from(
+            "\n╭─────────────────────────────────────────────────────────────────╮\n\
+             │ ⚠️  ONNX Runtime Library Not Found                              │\n\
+             ╰─────────────────────────────────────────────────────────────────╯\n\n"
+        );
+
+        error_msg.push_str("The ONNX Runtime shared library is required but not installed.\n");
+        error_msg.push_str("This typically happens when installing via 'cargo install'.\n\n");
+
+        error_msg.push_str("📦 SOLUTION:\n\n");
+        error_msg.push_str("Download the full release package from:\n");
+        error_msg.push_str("https://github.com/neur0map/cyx/releases\n\n");
+
+        match os {
+            "linux" => {
+                error_msg.push_str("For Linux, the release includes libonnxruntime.so.1.16.0\n\n");
+                error_msg.push_str("Install it with:\n");
+                error_msg.push_str("  sudo cp libonnxruntime.so.1.16.0 /usr/local/lib/\n");
+                error_msg.push_str("  sudo ldconfig\n\n");
+                error_msg.push_str("Or place it in the same directory as the cyx binary:\n");
+                error_msg.push_str("  cp libonnxruntime.so.1.16.0 $(dirname $(which cyx))/\n");
+            }
+            "macos" => {
+                error_msg.push_str("For macOS, the release includes libonnxruntime.1.16.0.dylib\n\n");
+                error_msg.push_str("Install it with:\n");
+                error_msg.push_str("  sudo cp libonnxruntime.1.16.0.dylib /usr/local/lib/\n\n");
+                error_msg.push_str("Or place it in the same directory as the cyx binary:\n");
+                error_msg.push_str("  cp libonnxruntime.1.16.0.dylib $(dirname $(which cyx))/\n");
+            }
+            "windows" => {
+                error_msg.push_str("For Windows, the release includes onnxruntime.dll\n\n");
+                error_msg.push_str("Place it in the same directory as cyx.exe\n");
+            }
+            _ => {
+                error_msg.push_str("Extract the release package and copy the library file\n");
+                error_msg.push_str("to the same directory as the cyx binary.\n");
+            }
+        }
+
+        error_msg.push_str("\n─────────────────────────────────────────────────────────────────\n");
+        error_msg.push_str("For more help, see: https://github.com/neur0map/cyx#troubleshooting\n");
+
+        anyhow::anyhow!(error_msg)
+    }
+
     pub fn new(model_size: &str, models_dir: &Path) -> Result<Self> {
         let model_info = Self::get_model_info(model_size)?;
         let model_dir = models_dir.join(model_size);
@@ -55,7 +102,20 @@ impl ONNXEmbedder {
                 .with_name("cyx-embedder")
                 .with_log_level(LoggingLevel::Warning)
                 .build()
-                .context("Failed to initialize ONNX Runtime")?,
+                .map_err(|e| {
+                    let error_msg = e.to_string();
+                    // Check if it's a library loading error
+                    if error_msg.contains("libonnxruntime")
+                        || error_msg.contains("onnxruntime.dll")
+                        || error_msg.contains("cannot open shared object")
+                        || error_msg.contains("library not loaded")
+                        || error_msg.contains("dyld")
+                    {
+                        Self::create_library_error()
+                    } else {
+                        anyhow::anyhow!("Failed to initialize ONNX Runtime: {}", e)
+                    }
+                })?,
         );
 
         // Load ONNX session

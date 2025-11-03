@@ -208,8 +208,23 @@ install: build ## Install production binary to system (copies binary, not a syml
 	@echo "$(YELLOW)NOTE: This creates a COPY of the binary, not a symlink.$(RESET)"
 	@echo "$(YELLOW)For development, use 'make build' (creates symlink instead).$(RESET)"
 	@echo ""
-	@echo "$(BLUE)Installing to system PATH...$(RESET)"
+	@echo "$(BLUE)Installing binary to system PATH...$(RESET)"
 	@$(CARGO) install --path . --force
+	@echo ""
+	@echo "$(BLUE)Installing ONNX Runtime library...$(RESET)"
+	@INSTALL_DIR=$$(dirname $$(which cyx 2>/dev/null || echo "$$HOME/.cargo/bin/cyx")) && \
+	if [ -f "$(TARGET_DIR)/libonnxruntime.1.16.0.dylib" ]; then \
+		cp "$(TARGET_DIR)/libonnxruntime.1.16.0.dylib" "$$INSTALL_DIR/" && \
+		cp "$(TARGET_DIR)/libonnxruntime.dylib" "$$INSTALL_DIR/" 2>/dev/null || true && \
+		echo "$(GREEN)✓ Copied ONNX Runtime library to $$INSTALL_DIR$(RESET)"; \
+	elif [ -f "$(TARGET_DIR)/libonnxruntime.so.1.16.0" ]; then \
+		cp "$(TARGET_DIR)/libonnxruntime.so.1.16.0" "$$INSTALL_DIR/" && \
+		cp "$(TARGET_DIR)/libonnxruntime.so" "$$INSTALL_DIR/" 2>/dev/null || true && \
+		echo "$(GREEN)✓ Copied ONNX Runtime library to $$INSTALL_DIR$(RESET)"; \
+	else \
+		echo "$(YELLOW)⚠ ONNX Runtime library not found in $(TARGET_DIR)$(RESET)"; \
+		echo "$(YELLOW)  You may need to manually copy the library.$(RESET)"; \
+	fi
 	@echo ""
 	@echo "$(GREEN)✓ Cyx installed successfully!$(RESET)"
 	@echo ""
@@ -388,8 +403,27 @@ pre-commit: fmt check test ## Run all pre-commit checks (fmt, check, test)
 	@echo "$(GREEN)Ready to commit!$(RESET)"
 	@echo ""
 
+.PHONY: build-release-only
+build-release-only: deps ## Build the release binary without symlink
+	@echo "$(CYAN)╔════════════════════════════════════════════════════════════╗$(RESET)"
+	@echo "$(CYAN)║$(RESET)  $(MAGENTA)Building Cyx (Release Mode)$(RESET)                          $(CYAN)║$(RESET)"
+	@echo "$(CYAN)╚════════════════════════════════════════════════════════════╝$(RESET)"
+	@echo ""
+	@$(CARGO) build $(CARGO_BUILD_FLAGS)
+	@echo ""
+	@echo "$(GREEN)✓ Build completed successfully!$(RESET)"
+	@echo ""
+
+.PHONY: package
+package: build-release-only ## Create distributable release package with bundled libraries
+	@echo "$(CYAN)╔════════════════════════════════════════════════════════════╗$(RESET)"
+	@echo "$(CYAN)║$(RESET)  $(MAGENTA)Creating Release Package$(RESET)                           $(CYAN)║$(RESET)"
+	@echo "$(CYAN)╚════════════════════════════════════════════════════════════╝$(RESET)"
+	@echo ""
+	@bash scripts/package-release.sh
+
 .PHONY: release
-release: pre-commit build ## Full release build with all checks
+release: pre-commit build package ## Full release build with all checks and packaging
 	@echo ""
 	@echo "$(CYAN)╔════════════════════════════════════════════════════════════╗$(RESET)"
 	@echo "$(CYAN)║$(RESET)  $(MAGENTA)Release Build Complete!$(RESET)                             $(CYAN)║$(RESET)"
@@ -397,7 +431,8 @@ release: pre-commit build ## Full release build with all checks
 	@echo ""
 	@$(MAKE) --no-print-directory size
 	@echo ""
-	@echo "$(GREEN)Ready for release!$(RESET)"
+	@echo "$(GREEN)Release package created in dist/ directory$(RESET)"
+	@echo "$(GREEN)Ready for distribution!$(RESET)"
 	@echo ""
 
 .PHONY: all

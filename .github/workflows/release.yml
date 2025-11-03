@@ -1,0 +1,193 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            platform: linux-aarch64
+            target: aarch64-unknown-linux-gnu
+          - os: macos-13
+            platform: macos-x86_64
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            platform: macos-aarch64
+            target: aarch64-apple-darwin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+      - name: Create release package
+        run: |
+          # Get version from tag or Cargo.toml
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(grep "^version" Cargo.toml | head -1 | cut -d'"' -f2)
+          fi
+
+          PLATFORM="${{ matrix.platform }}"
+          RELEASE_NAME="cyx-v${VERSION}-${PLATFORM}"
+          RELEASE_DIR="dist/${RELEASE_NAME}"
+
+          # Create release directory
+          mkdir -p "${RELEASE_DIR}"
+
+          # Copy binary
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp "target/${{ matrix.target }}/release/cyx.exe" "${RELEASE_DIR}/"
+            BINARY_NAME="cyx.exe"
+          else
+            cp "target/${{ matrix.target }}/release/cyx" "${RELEASE_DIR}/"
+            chmod +x "${RELEASE_DIR}/cyx"
+            BINARY_NAME="cyx"
+          fi
+
+          # Copy ONNX Runtime library
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            cp target/${{ matrix.target }}/release/libonnxruntime.so.1.16.0 "${RELEASE_DIR}/" || true
+            cp target/${{ matrix.target }}/release/libonnxruntime.so "${RELEASE_DIR}/" || true
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            cp target/${{ matrix.target }}/release/libonnxruntime.1.16.0.dylib "${RELEASE_DIR}/" || true
+            cp target/${{ matrix.target }}/release/libonnxruntime.dylib "${RELEASE_DIR}/" || true
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp target/${{ matrix.target }}/release/onnxruntime.dll "${RELEASE_DIR}/" || true
+          fi
+
+          # Create README
+          cat > "${RELEASE_DIR}/README.txt" << 'EOF'
+          CYX - Cybersecurity Companion
+          ==============================
+
+          Installation Instructions:
+
+          1. Extract this archive to a directory of your choice
+          2. The directory contains:
+             - cyx: The main executable
+             - libonnxruntime.*: Required runtime library
+
+          3. Installation options:
+
+             Option A - System-wide installation (recommended):
+
+             Linux/macOS:
+             ------------
+             sudo cp cyx /usr/local/bin/
+             sudo cp libonnxruntime* /usr/local/lib/
+             sudo ldconfig  # Linux only
+
+             Then run: cyx setup
+
+             Option B - Local installation:
+
+             Linux/macOS:
+             ------------
+             1. Move both files to a directory in your PATH, e.g., ~/.local/bin/
+                mkdir -p ~/.local/bin
+                cp cyx ~/.local/bin/
+                cp libonnxruntime* ~/.local/bin/
+
+             2. Make sure ~/.local/bin is in your PATH:
+                export PATH="$HOME/.local/bin:$PATH"
+                (Add this line to your ~/.bashrc or ~/.zshrc)
+
+             3. Run: cyx setup
+
+          4. First time setup:
+             cyx setup
+
+          For more information, visit: https://github.com/neur0map/cyx
+
+          Note: The ONNX Runtime library must be in the same directory as the
+          binary or in a system library directory (like /usr/local/lib).
+          EOF
+
+          # Create archive
+          cd dist
+          tar -czf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
+          sha256sum "${RELEASE_NAME}.tar.gz" > "${RELEASE_NAME}.tar.gz.sha256"
+          cd ..
+
+          echo "RELEASE_FILE=dist/${RELEASE_NAME}.tar.gz" >> $GITHUB_ENV
+          echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RELEASE_NAME }}
+          path: |
+            ${{ env.RELEASE_FILE }}
+            ${{ env.RELEASE_FILE }}.sha256
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

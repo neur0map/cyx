@@ -37,7 +37,9 @@ impl ContentFetcher {
     fn html_to_markdown(&self, html: &str) -> String {
         // Configure html2text for better markdown output
         let width = 120; // Line width for wrapping
-        let markdown = html2text::from_read(html.as_bytes(), width);
+                         // html2text 0.16 returns Result, handle errors gracefully
+        let markdown =
+            html2text::from_read(html.as_bytes(), width).unwrap_or_else(|_| html.to_string());
 
         // Clean up the markdown
         self.clean_markdown(&markdown)
