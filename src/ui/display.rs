@@ -107,7 +107,7 @@ impl Display {
             ProgressStyle::default_spinner()
                 .template("{spinner:.cyan} {msg:.dimmed} [{elapsed:.bold}]")
                 .unwrap()
-                .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
+                .tick_strings(&["|", "/", "-", "\\", "|", "/", "-", "\\"]),
         );
         pb.set_message(message.to_string());
         pb.enable_steady_tick(Duration::from_millis(80));

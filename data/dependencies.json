@@ -1,0 +1,35 @@
+{
+  "dependencies": [
+    {
+      "name": "sqlite",
+      "required": false,
+      "check_command": "sqlite3 --version",
+      "install_methods": {
+        "bundled": {
+          "description": "Use bundled SQLite (recommended)",
+          "enabled": true
+        }
+      }
+    },
+    {
+      "name": "ollama",
+      "required": false,
+      "check_command": "ollama --version",
+      "check_service": "http://localhost:11434/api/tags",
+      "install_methods": {
+        "macos": {
+          "command": "curl -fsSL https://ollama.com/install.sh | sh",
+          "description": "Install Ollama for macOS"
+        },
+        "linux": {
+          "command": "curl -fsSL https://ollama.com/install.sh | sh",
+          "description": "Install Ollama for Linux"
+        },
+        "windows": {
+          "url": "https://ollama.com/download/windows",
+          "description": "Download Ollama installer for Windows"
+        }
+      }
+    }
+  ]
+}

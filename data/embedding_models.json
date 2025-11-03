@@ -1,0 +1,43 @@
+{
+  "models": {
+    "small": {
+      "name": "all-MiniLM-L6-v2",
+      "dimensions": 384,
+      "size_mb": 23,
+      "description": "Fast and lightweight, good for most use cases",
+      "hf_repo": "sentence-transformers/all-MiniLM-L6-v2",
+      "onnx_file": "onnx/model.onnx",
+      "tokenizer_file": "tokenizer.json",
+      "files": [
+        {
+          "name": "model.onnx",
+          "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx"
+        },
+        {
+          "name": "tokenizer.json",
+          "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json"
+        }
+      ]
+    },
+    "medium": {
+      "name": "all-mpnet-base-v2",
+      "dimensions": 768,
+      "size_mb": 420,
+      "description": "Better quality, balanced performance",
+      "hf_repo": "sentence-transformers/all-mpnet-base-v2",
+      "onnx_file": "onnx/model.onnx",
+      "tokenizer_file": "tokenizer.json",
+      "files": [
+        {
+          "name": "model.onnx",
+          "url": "https://huggingface.co/sentence-transformers/all-mpnet-base-v2/resolve/main/onnx/model.onnx"
+        },
+        {
+          "name": "tokenizer.json",
+          "url": "https://huggingface.co/sentence-transformers/all-mpnet-base-v2/resolve/main/tokenizer.json"
+        }
+      ]
+    }
+  },
+  "default": "small"
+}

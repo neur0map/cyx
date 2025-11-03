@@ -1,7 +1,8 @@
 use crate::{
+    cache::{CacheStorage, QueryNormalizer},
     cli::CliContext,
     config::Config,
-    llm::{GroqProvider, LLMProvider, Message, PerplexityProvider},
+    llm::{GroqProvider, LLMProvider, Message, OllamaProvider, PerplexityProvider},
     ui::Display,
 };
 use anyhow::Result;
@@ -32,6 +33,9 @@ impl InteractiveSession {
                     .ok_or_else(|| anyhow::anyhow!("Perplexity API key not configured"))?;
                 Box::new(PerplexityProvider::new(api_key)?)
             }
+            crate::config::LLMProvider::Ollama => {
+                Box::new(OllamaProvider::new(config.ollama.clone())?)
+            }
         };
 
         Ok(Self { context, provider })
@@ -39,12 +43,285 @@ impl InteractiveSession {
 
     /// Run a one-shot query (non-interactive)
     pub fn one_shot(config: Config, query: &str, context: CliContext) -> Result<()> {
-        let session = Self::new(config, context)?;
-        session.process_query(query)?;
+        // Check cache if enabled
+        if config.cache.enabled {
+            let cache_dir = Config::cache_dir()?;
+            let storage = CacheStorage::new(&cache_dir)?;
+            let normalizer = QueryNormalizer::with_defaults()?;
+
+            // Normalize query and compute hash
+            let normalized = normalizer.normalize(query)?;
+            let hash = normalizer.compute_hash(&normalized);
+
+            // Check if we have a cached response (exact match)
+            if let Some(cached) = storage.get_by_hash(&hash)? {
+                if !context.quiet {
+                    Display::info(&format!("[*] Cache hit! (exact match)"));
+                }
+
+                // Display cached response
+                Display::stream_box_section("RESPONSE", &cached.response);
+                
+                if !context.quiet {
+                    println!();
+                    Display::sources_with_links(
+                        &cached.provider,
+                        &cached.model,
+                        false, // We don't track web search for cache
+                        &[], // No sources in cache
+                    );
+                    println!();
+                    println!("{}", format!("Cached {} ago • Accessed {} times", 
+                        format_duration_ago(&cached.created_at),
+                        cached.access_count
+                    ).dimmed());
+                }
+                
+                return Ok(());
+            }
+
+            // Try vector similarity search
+            let similar_results = storage.search_similar(&normalized, config.cache.similarity_threshold, 1)?;
+            if let Some((cached, similarity)) = similar_results.first() {
+                if !context.quiet {
+                    Display::info(&format!("[*] Cache hit! (similar match: {:.0}%)", similarity * 100.0));
+                }
+
+                // Display cached response
+                Display::stream_box_section("RESPONSE", &cached.response);
+                
+                if !context.quiet {
+                    println!();
+                    Display::sources_with_links(
+                        &cached.provider,
+                        &cached.model,
+                        false,
+                        &[],
+                    );
+                    println!();
+                    println!("{}", format!("Similar to: \"{}\"", cached.query_original).dimmed());
+                    println!("{}", format!("Cached {} ago • Accessed {} times", 
+                        format_duration_ago(&cached.created_at),
+                        cached.access_count
+                    ).dimmed());
+                }
+                
+                return Ok(());
+            } else if !context.quiet {
+                Display::info("Cache miss - calling API...");
+            }
+
+            // Cache miss - make API call
+            let session = Self::new(config.clone(), context.clone())?;
+            let response = session.process_query_and_return(query)?;
+
+            // Store in cache
+            storage.store(
+                query,
+                &normalized,
+                &hash,
+                &response,
+                session.provider.name(),
+                session.provider.model(),
+            )?;
+
+            if !context.quiet {
+                println!();
+                println!("{}", "✓ Response cached for future use".dimmed());
+            }
+        } else {
+            // Cache disabled - just process query
+            let session = Self::new(config, context)?;
+            session.process_query(query)?;
+        }
+
         Ok(())
     }
 
+    fn process_query_and_return(&self, query: &str) -> Result<String> {
+        use std::io::{self, Write};
+        use std::sync::{Arc, Mutex};
+
+        // Build conversation with system prompt
+        let system_prompt = if self.context.learn {
+            Self::create_learn_system_prompt()
+        } else {
+            Self::create_system_prompt()
+        };
+
+        let messages = vec![Message::system(system_prompt), Message::user(query)];
+
+        // Create progress bar
+        let pb = if self.context.should_show_progress() && !self.context.no_tty {
+            Some(Arc::new(Display::create_progress_bar("Getting response...")))
+        } else {
+            None
+        };
+
+        // Track full response
+        let full_response = Arc::new(Mutex::new(String::new()));
+        let full_response_clone = full_response.clone();
+
+        // Track state for streaming
+        let line_buffer = Arc::new(Mutex::new(String::new()));
+        let in_code_block = Arc::new(Mutex::new(false));
+        let sources_started = Arc::new(Mutex::new(false));
+        let box_closed = Arc::new(Mutex::new(false));
+        let box_header_printed = Arc::new(Mutex::new(false));
+        let sources_header_printed = Arc::new(Mutex::new(false));
+        let char_count = Arc::new(Mutex::new(0));
+        let quiet = self.context.quiet;
+        let no_tty = self.context.no_tty;
+
+        let line_buffer_clone = line_buffer.clone();
+        let in_code_block_clone = in_code_block.clone();
+        let sources_started_clone = sources_started.clone();
+        let box_closed_clone = box_closed.clone();
+        let box_header_printed_clone = box_header_printed.clone();
+        let sources_header_printed_clone = sources_header_printed.clone();
+        let char_count_clone = char_count.clone();
+        let pb_clone = pb.clone();
+
+        let provider_name = self.provider.name().to_string();
+        let model_name = self.provider.model().to_string();
+        let searches_web = self.provider.searches_web();
+
+        self.provider.send_message_stream(
+            &messages,
+            Box::new(move |chunk| {
+                // Store full response
+                full_response_clone.lock().unwrap().push_str(chunk);
+
+                // Update character count and progress bar
+                let mut count = char_count_clone.lock().unwrap();
+                *count += chunk.len();
+
+                // Update progress bar periodically
+                if *count % 50 == 0 || *count < 50 {
+                    if let Some(ref progress) = pb_clone {
+                        progress.set_message(format!("Streaming... {} chars", *count));
+                    }
+                }
+
+                if quiet || no_tty {
+                    print!("{}", chunk);
+                    io::stdout().flush().unwrap();
+                } else {
+                    let mut buffer = line_buffer_clone.lock().unwrap();
+                    let mut in_code = in_code_block_clone.lock().unwrap();
+                    let mut sources_started = sources_started_clone.lock().unwrap();
+                    let mut box_closed = box_closed_clone.lock().unwrap();
+                    let mut box_header_printed = box_header_printed_clone.lock().unwrap();
+                    let mut sources_header_printed = sources_header_printed_clone.lock().unwrap();
+
+                    // Print box header on first chunk
+                    if !*box_header_printed {
+                        if let Some(ref progress) = pb_clone {
+                            progress.finish_and_clear();
+                        }
+                        Display::stream_box_header("RESPONSE");
+                        print!("{} ", "│".cyan());
+                        io::stdout().flush().unwrap();
+                        *box_header_printed = true;
+                    }
+
+                    for ch in chunk.chars() {
+                        if ch == '\n' {
+                            // Check if we've hit the [SOURCES] section
+                            if buffer.trim() == "[SOURCES]" {
+                                *sources_started = true;
+                                if !*box_closed {
+                                    println!();
+                                    Display::stream_box_footer();
+                                    println!();
+                                    *box_closed = true;
+                                }
+
+                                if !*sources_header_printed {
+                                    Display::print_sources_header(
+                                        &provider_name,
+                                        &model_name,
+                                        searches_web,
+                                    );
+                                    *sources_header_printed = true;
+                                }
+
+                                buffer.clear();
+                                continue;
+                            }
+
+                            // If we're in sources section, print links with animation
+                            if *sources_started {
+                                let line = buffer.trim();
+                                if line.starts_with("- ") {
+                                    Display::print_link_animated(&line[2..]);
+                                }
+                                buffer.clear();
+                                continue;
+                            }
+
+                            // Inside the response box - print with smooth animation
+                            if buffer.trim().starts_with("```") {
+                                *in_code = !*in_code;
+                                Display::print_line_animated(&buffer, true, false);
+                            } else if *in_code {
+                                Display::print_line_animated(&buffer, false, true);
+                            } else {
+                                Display::print_line_animated(&buffer, false, false);
+                            }
+                            buffer.clear();
+                            print!("{} ", "│".cyan());
+                            io::stdout().flush().unwrap();
+                        } else {
+                            buffer.push(ch);
+                        }
+                    }
+                }
+            }),
+        )?;
+
+        // Print any remaining buffer content
+        if !self.context.quiet && !self.context.no_tty {
+            let buffer = line_buffer.lock().unwrap();
+            let box_closed = box_closed.lock().unwrap();
+
+            if !buffer.is_empty() {
+                let sources_started = sources_started.lock().unwrap();
+                if *sources_started {
+                    let line = buffer.trim();
+                    if line.starts_with("- ") {
+                        Display::print_link_animated(&line[2..]);
+                    }
+                } else {
+                    let in_code = in_code_block.lock().unwrap();
+                    if *in_code {
+                        Display::print_line_animated(&buffer, false, true);
+                    } else {
+                        Display::print_line_animated(&buffer, false, false);
+                    }
+                }
+            }
+
+            if !*box_closed {
+                println!();
+                Display::stream_box_footer();
+            }
+
+            println!();
+        } else if self.context.quiet {
+            println!();
+        }
+
+        let response = full_response.lock().unwrap().clone();
+        Ok(response)
+    }
+
     fn process_query(&self, query: &str) -> Result<()> {
+        self.process_query_and_return(query)?;
+        Ok(())
+    }
+
+    fn _process_query_old(&self, query: &str) -> Result<()> {
         use std::io::{self, Write};
         use std::sync::{Arc, Mutex};
 
@@ -495,5 +772,26 @@ At the very END of your response, after ALL content, include sources in this EXA
 Keep your main response body clean. Save ALL source URLs for the [SOURCES] section at the very end.
 
 REMEMBER: LEARN MODE is about education. Be thorough, accurate, and cite sources with FULL URLs in the [SOURCES] section at the end."#.to_string()
+    }
+}
+
+fn format_duration_ago(datetime: &chrono::DateTime<chrono::Utc>) -> String {
+    let now = chrono::Utc::now();
+    let duration = now.signed_duration_since(*datetime);
+
+    if duration.num_seconds() < 60 {
+        "just now".to_string()
+    } else if duration.num_minutes() < 60 {
+        let mins = duration.num_minutes();
+        format!("{} minute{} ago", mins, if mins == 1 { "" } else { "s" })
+    } else if duration.num_hours() < 24 {
+        let hours = duration.num_hours();
+        format!("{} hour{} ago", hours, if hours == 1 { "" } else { "s" })
+    } else if duration.num_days() < 30 {
+        let days = duration.num_days();
+        format!("{} day{} ago", days, if days == 1 { "" } else { "s" })
+    } else {
+        let months = duration.num_days() / 30;
+        format!("{} month{} ago", months, if months == 1 { "" } else { "s" })
     }
 }

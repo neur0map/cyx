@@ -1,9 +1,11 @@
 pub mod provider;
 pub mod groq;
+pub mod ollama;
 pub mod perplexity;
 
 pub use provider::LLMProvider;
 pub use groq::GroqProvider;
+pub use ollama::OllamaProvider;
 pub use perplexity::PerplexityProvider;
 
 use serde::{Deserialize, Serialize};

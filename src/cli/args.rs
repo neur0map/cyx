@@ -44,6 +44,78 @@ pub enum Commands {
 
     /// Run initial setup wizard
     Setup,
+
+    /// Check system dependencies and health
+    Doctor,
+
+    /// Manage Ollama models
+    Ollama {
+        #[command(subcommand)]
+        action: OllamaAction,
+    },
+
+    /// Manage query cache
+    Cache {
+        #[command(subcommand)]
+        action: CacheAction,
+    },
+
+    /// Download ONNX embedding model
+    DownloadModel {
+        /// Model size (small, medium, large)
+        #[arg(default_value = "small")]
+        size: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum OllamaAction {
+    /// List installed models
+    List,
+
+    /// Pull/download a model
+    Pull {
+        /// Model name (e.g., mistral:7b-instruct)
+        #[arg(value_name = "MODEL")]
+        model: String,
+    },
+
+    /// Remove a model
+    Remove {
+        /// Model name to remove
+        #[arg(value_name = "MODEL")]
+        model: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum CacheAction {
+    /// Show cache statistics
+    Stats,
+
+    /// List cached queries
+    List {
+        /// Maximum number of entries to show
+        #[arg(short, long, default_value = "10")]
+        limit: usize,
+    },
+
+    /// Clear all cached queries
+    Clear,
+
+    /// Remove a specific cached query by hash
+    Remove {
+        /// Query hash to remove
+        #[arg(value_name = "HASH")]
+        hash: String,
+    },
+
+    /// Clean up old cache entries
+    Cleanup {
+        /// Remove entries older than N days
+        #[arg(short, long, default_value = "30")]
+        days: u32,
+    },
 }
 
 #[derive(Subcommand)]

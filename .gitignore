@@ -15,11 +15,24 @@ Cargo.lock
 .DS_Store
 Thumbs.db
 
-# Config (sensitive)
+# Config (sensitive - never commit)
 config.toml
 *.key
 *.secret
+.env
+.env.*
+
+# Cache and data (local only)
+*.db
+*.sqlite
+*.sqlite3
+queries.db
 
 # Test files
 test_search.sh
 *_demo.sh
+
+# ONNX models (too large for git)
+*.onnx
+models/
+.cache/
