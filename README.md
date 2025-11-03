@@ -13,13 +13,16 @@ LLM-powered terminal tool for security command lookup. Supports Perplexity, Groq
 ## Quick Start
 
 ```bash
-# Clone and build
+# Install with one command
+curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/install.sh | bash
+
+# Or build from source
 git clone https://github.com/neur0map/cyx.git
 cd cyx
-cargo build --release
+make install
 
-# Setup (first time - interactive wizard)
-./target/release/cyx setup
+# First time setup
+cyx setup
 
 # Use
 cyx "nmap stealth scan"
@@ -29,89 +32,102 @@ cyx --learn "linux privilege escalation"
 
 ## Installation
 
-### Option 1: Download Pre-built Binary (Recommended)
+### Quick Install (Recommended)
 
-Download the latest release for your platform from the [Releases page](https://github.com/neur0map/cyx/releases).
+**One-line installer** for Linux/macOS:
 
-**Important**: The archive contains both the `cyx` binary and the required ONNX Runtime library. Both files must be kept together.
-
-#### Linux/macOS Installation
-
-**System-wide (recommended):**
 ```bash
-# Extract the archive
-tar -xzf cyx-v0.2.0-linux-x86_64.tar.gz
-cd cyx-v0.2.0-linux-x86_64
-
-# Install to system
-sudo cp cyx /usr/local/bin/
-sudo cp libonnxruntime* /usr/local/lib/
-sudo ldconfig  # Linux only
-
-# Run setup
-cyx setup
+curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/install.sh | bash
 ```
 
-**Local installation:**
+This will:
+- Download the latest release for your platform
+- Install to `~/.local/bin` (or custom location via `INSTALL_DIR`)
+- Handle the ONNX Runtime library automatically
+- Add to PATH if needed
+- Run the setup wizard
+
+**Custom installation directory:**
 ```bash
-# Extract and copy to local bin
-tar -xzf cyx-v0.2.0-linux-x86_64.tar.gz
-cd cyx-v0.2.0-linux-x86_64
+INSTALL_DIR=/usr/local/bin curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/install.sh | bash
+```
+
+### Manual Installation
+
+**Note**: Pre-built binaries will be available in GitHub Releases after tagging a new version (see below for instructions).
+
+Download the latest release from [Releases page](https://github.com/neur0map/cyx/releases) and run:
+
+```bash
+# Extract the archive
+tar -xzf cyx-v0.2.1-linux-x86_64.tar.gz
+cd cyx-v0.2.1-linux-x86_64
+
+# Run the installer script
+bash install.sh
+```
+
+Or manually copy both files:
+```bash
 mkdir -p ~/.local/bin
 cp cyx ~/.local/bin/
 cp libonnxruntime* ~/.local/bin/
-
-# Add to PATH (if not already there)
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-
-# Run setup
+export PATH="$HOME/.local/bin:$PATH"
 cyx setup
 ```
 
-### Option 2: Build from Source
+**Important**: The `cyx` binary requires the ONNX Runtime library. Both files must be kept together in the same directory.
+
+### Build from Source
 
 #### Prerequisites
 
 - Rust 1.70 or higher
 - API key from [Perplexity](https://www.perplexity.ai/settings/api) or [Groq](https://console.groq.com)
 
-#### Build Instructions
+#### Quick Build
 
 ```bash
 git clone https://github.com/neur0map/cyx.git
 cd cyx
-cargo build --release
+make install  # Builds, installs binary and library
+cyx setup
 ```
 
-**Important for `cargo install` users:**
-
-If you use `cargo install --path .`, you must **manually copy the ONNX Runtime library** to the same directory as the installed binary:
+#### Using Cargo Install
 
 ```bash
+# Clone and navigate to the repository
+git clone https://github.com/neur0map/cyx.git
+cd cyx
+
 # Install the binary
 cargo install --path .
 
+# IMPORTANT: Copy the ONNX Runtime library
 # Find where cargo installed it (usually ~/.cargo/bin)
 INSTALL_DIR=$(dirname $(which cyx))
-
-# Copy the library from the build
 cp target/release/libonnxruntime* $INSTALL_DIR/
+
+# Run setup
+cyx setup
 ```
 
-**Recommended:** Use the Makefile which handles this automatically:
+**Note**: `cargo install` only copies the binary, not the required ONNX library. You must manually copy it as shown above.
+
+#### Makefile Commands
 
 ```bash
 make build    # Build and create symlink for development
 make check    # Run fmt + clippy
-make install  # Install to system PATH (includes library)
+make install  # Install to system (includes library)
 make setup    # Run setup wizard
 make help     # Show all commands
 ```
 
 ### Initial Configuration
 
-Run the interactive setup wizard:
+After installation, run the interactive setup wizard:
 
 ```bash
 cyx setup
@@ -221,6 +237,28 @@ This error means the ONNX Runtime library is not in the library search path. Thi
    ```
 
 For more detailed troubleshooting, see [BUILDING.md](BUILDING.md).
+
+## Creating a Release
+
+To create a new release with automated binary builds for all platforms:
+
+```bash
+# Update version in Cargo.toml, then commit
+git add Cargo.toml
+git commit -m "Bump version to v0.2.2"
+
+# Create and push a version tag
+git tag v0.2.2
+git push origin master
+git push origin v0.2.2
+```
+
+This triggers the GitHub Actions workflow which will:
+- Build binaries for Linux (x86_64, aarch64) and macOS (x86_64, aarch64)
+- Bundle each binary with the ONNX Runtime library
+- Include the install.sh script in release packages
+- Create a GitHub Release with all artifacts
+- Generate SHA256 checksums for verification
 
 ## Technical Details
 

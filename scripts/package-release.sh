@@ -110,55 +110,78 @@ if [[ -f "target/release/libonnxruntime.${LIB_EXT}" ]] && [[ "${OS}" != "mingw"*
     cp "target/release/libonnxruntime.${LIB_EXT}" "${RELEASE_DIR}/" 2>/dev/null || true
 fi
 
+# Copy installer script
+echo -e "${YELLOW}Copying installer script...${RESET}"
+if [[ -f "install.sh" ]]; then
+    cp "install.sh" "${RELEASE_DIR}/"
+    chmod +x "${RELEASE_DIR}/install.sh"
+fi
+
 # Create README for the package
 echo -e "${YELLOW}Creating installation instructions...${RESET}"
 cat > "${RELEASE_DIR}/README.txt" << 'EOF'
 CYX - Cybersecurity Companion
 ==============================
 
-⚠️  IMPORTANT: Both files in this package must be kept together!
+Quick Installation
+------------------
+
+Run the included installer script (recommended):
+
+    bash install.sh
+
+This will guide you through the installation process and handle
+the ONNX Runtime library automatically.
+
+
+Manual Installation
+-------------------
+
+⚠️  IMPORTANT: Both cyx and libonnxruntime.* must be kept together!
 
 The cyx binary requires the ONNX Runtime library to function.
 Installing only the binary will result in a "library not found" error.
 
-Installation Instructions:
+Package contents:
+- cyx: The main executable
+- libonnxruntime.*: Required runtime library
+- install.sh: Automated installer script
 
-1. Extract this archive to a directory of your choice
-2. The directory contains:
-   - cyx: The main executable
-   - libonnxruntime.*: Required runtime library
+Installation options:
 
-3. Installation options:
+Option A - Local installation (recommended):
+--------------------------------------------
+mkdir -p ~/.local/bin
+cp cyx ~/.local/bin/
+cp libonnxruntime* ~/.local/bin/
+export PATH="$HOME/.local/bin:$PATH"
 
-   Option A - System-wide installation (recommended):
+Add the export line to your ~/.bashrc or ~/.zshrc to make it permanent.
 
-   Linux/macOS:
-   ------------
-   sudo cp cyx /usr/local/bin/
-   sudo cp libonnxruntime* /usr/local/lib/
-   sudo ldconfig  # Linux only
+Then run: cyx setup
 
-   Then run: cyx setup
 
-   Option B - Local installation:
+Option B - System-wide installation:
+------------------------------------
+sudo cp cyx /usr/local/bin/
+sudo cp libonnxruntime* /usr/local/lib/
+sudo ldconfig  # Linux only
 
-   Linux/macOS:
-   ------------
-   1. Move both files to a directory in your PATH, e.g., ~/.local/bin/
-      mkdir -p ~/.local/bin
-      cp cyx ~/.local/bin/
-      cp libonnxruntime* ~/.local/bin/
+Then run: cyx setup
 
-   2. Make sure ~/.local/bin is in your PATH:
-      export PATH="$HOME/.local/bin:$PATH"
-      (Add this line to your ~/.bashrc or ~/.zshrc)
 
-   3. Run: cyx setup
+First Time Setup
+----------------
+After installation, configure your API keys:
 
-4. First time setup:
-   cyx setup
+    cyx setup
 
-For more information, visit: https://github.com/neur0map/cyx
+You'll need an API key from Perplexity or Groq.
+
+
+Documentation
+-------------
+https://github.com/neur0map/cyx
 
 Note: The ONNX Runtime library must be in the same directory as the
 binary or in a system library directory (like /usr/local/lib).
@@ -193,6 +216,7 @@ echo ""
 echo -e "${BLUE}Package contents:${RESET}"
 echo "  - ${BINARY_NAME}"
 echo "  - ${LIB_NAME}"
+echo "  - install.sh"
 echo "  - README.txt"
 echo ""
 echo -e "${BLUE}Output:${RESET}"
