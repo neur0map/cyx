@@ -371,7 +371,7 @@ clean: ## Complete system cleanup - removes ALL cyx files, config, cache, and mo
 	@echo "  - Cache and downloaded models (~/.cache/cyx/)"
 	@echo "  - System symlinks"
 	@echo ""
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	@bash -c 'read -p "Are you sure? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
 		echo "$(BLUE)Step 1/6: Cleaning build artifacts...$(RESET)"; \
@@ -423,7 +423,7 @@ clean: ## Complete system cleanup - removes ALL cyx files, config, cache, and mo
 		echo "$(DIMMED)To reinstall: make install$(RESET)"; \
 	else \
 		echo "$(YELLOW)Cleanup cancelled.$(RESET)"; \
-	fi
+	fi'
 
 .PHONY: clean-build
 clean-build: ## Clean only build artifacts (keeps config and cache)
