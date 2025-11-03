@@ -73,6 +73,7 @@ YELLOW := \033[0;33m
 BLUE := \033[0;34m
 MAGENTA := \033[0;35m
 CYAN := \033[0;36m
+DIMMED := \033[2m
 RESET := \033[0m
 
 # Default target
@@ -200,35 +201,64 @@ path-info: ## Show symlink status and installation info
 	@echo ""
 
 .PHONY: install
-install: build ## Install production binary to system (copies binary, not a symlink)
+install: ## Complete installation - builds, installs binary and dependencies
 	@echo "$(CYAN)╔════════════════════════════════════════════════════════════╗$(RESET)"
-	@echo "$(CYAN)║$(RESET)  $(MAGENTA)Installing Cyx to System (Production)$(RESET)               $(CYAN)║$(RESET)"
+	@echo "$(CYAN)║$(RESET)  $(MAGENTA)Installing Cyx - Complete Setup$(RESET)                     $(CYAN)║$(RESET)"
 	@echo "$(CYAN)╚════════════════════════════════════════════════════════════╝$(RESET)"
 	@echo ""
-	@echo "$(YELLOW)NOTE: This creates a COPY of the binary, not a symlink.$(RESET)"
-	@echo "$(YELLOW)For development, use 'make build' (creates symlink instead).$(RESET)"
+	@echo "$(BLUE)Step 1/4: Building release binary...$(RESET)"
+	@$(CARGO) build $(CARGO_BUILD_FLAGS)
+	@echo "$(GREEN)✓ Build complete$(RESET)"
 	@echo ""
-	@echo "$(BLUE)Installing binary to system PATH...$(RESET)"
+	@echo "$(BLUE)Step 2/4: Installing binary to system PATH...$(RESET)"
 	@$(CARGO) install --path . --force
+	@echo "$(GREEN)✓ Binary installed$(RESET)"
 	@echo ""
-	@echo "$(BLUE)Installing ONNX Runtime library...$(RESET)"
+	@echo "$(BLUE)Step 3/4: Installing ONNX Runtime library...$(RESET)"
 	@INSTALL_DIR=$$(dirname $$(which cyx 2>/dev/null || echo "$$HOME/.cargo/bin/cyx")) && \
+	echo "  Installation directory: $$INSTALL_DIR" && \
 	if [ -f "$(TARGET_DIR)/libonnxruntime.1.16.0.dylib" ]; then \
 		cp "$(TARGET_DIR)/libonnxruntime.1.16.0.dylib" "$$INSTALL_DIR/" && \
 		cp "$(TARGET_DIR)/libonnxruntime.dylib" "$$INSTALL_DIR/" 2>/dev/null || true && \
-		echo "$(GREEN)✓ Copied ONNX Runtime library to $$INSTALL_DIR$(RESET)"; \
+		echo "$(GREEN)  ✓ Copied ONNX Runtime library (macOS)$(RESET)"; \
 	elif [ -f "$(TARGET_DIR)/libonnxruntime.so.1.16.0" ]; then \
 		cp "$(TARGET_DIR)/libonnxruntime.so.1.16.0" "$$INSTALL_DIR/" && \
 		cp "$(TARGET_DIR)/libonnxruntime.so" "$$INSTALL_DIR/" 2>/dev/null || true && \
-		echo "$(GREEN)✓ Copied ONNX Runtime library to $$INSTALL_DIR$(RESET)"; \
+		echo "$(GREEN)  ✓ Copied ONNX Runtime library (Linux)$(RESET)"; \
+	elif [ -f "$(TARGET_DIR)/onnxruntime.dll" ]; then \
+		cp "$(TARGET_DIR)/onnxruntime.dll" "$$INSTALL_DIR/" && \
+		echo "$(GREEN)  ✓ Copied ONNX Runtime library (Windows)$(RESET)"; \
 	else \
-		echo "$(YELLOW)⚠ ONNX Runtime library not found in $(TARGET_DIR)$(RESET)"; \
-		echo "$(YELLOW)  You may need to manually copy the library.$(RESET)"; \
+		echo "$(YELLOW)  ⚠ ONNX Runtime library not found in build directory$(RESET)"; \
+		echo "$(YELLOW)  → Will be auto-fixed when you run 'cyx setup'$(RESET)"; \
 	fi
 	@echo ""
-	@echo "$(GREEN)✓ Cyx installed successfully!$(RESET)"
+	@echo "$(BLUE)Step 4/4: Verifying installation...$(RESET)"
+	@if command -v cyx >/dev/null 2>&1; then \
+		INSTALLED_PATH=$$(which cyx) && \
+		echo "$(GREEN)  ✓ Binary location: $$INSTALLED_PATH$(RESET)" && \
+		cyx --version && \
+		echo ""; \
+	else \
+		echo "$(RED)  ✗ cyx not found in PATH$(RESET)"; \
+		echo "$(YELLOW)  → Add ~/.cargo/bin to your PATH$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)═══════════════════════════════════════════════════════════$(RESET)"
+	@echo "$(GREEN)✓ Installation Complete!$(RESET)"
+	@echo "$(CYAN)═══════════════════════════════════════════════════════════$(RESET)"
 	@echo ""
-	@echo "$(YELLOW)You can now run: $(RESET)$(GREEN)cyx$(RESET) $(YELLOW)from anywhere$(RESET)"
+	@echo "$(MAGENTA)Next steps:$(RESET)"
+	@echo "  1. Run: $(CYAN)cyx setup$(RESET)"
+	@echo "     $(DIMMED)(Configure API keys - auto-fixes any ONNX issues)$(RESET)"
+	@echo ""
+	@echo "  2. Test: $(CYAN)cyx doctor$(RESET)"
+	@echo "     $(DIMMED)(Check system health)$(RESET)"
+	@echo ""
+	@echo "  3. Try: $(CYAN)cyx \"nmap stealth scan\"$(RESET)"
+	@echo ""
+	@echo "$(YELLOW)The binary works from anywhere in your system!$(RESET)"
+	@echo "$(YELLOW)All data files are embedded - no external dependencies needed.$(RESET)"
 	@echo ""
 
 .PHONY: uninstall
