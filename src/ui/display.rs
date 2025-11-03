@@ -118,7 +118,10 @@ impl Display {
     pub fn stream_box_section(title: &str, content: &str) {
         let width = 58;
         println!();
-        println!("{}", format!("╭─── {} {}", title, "─".repeat(width - title.len() - 6)).cyan());
+        println!(
+            "{}",
+            format!("╭─── {} {}", title, "─".repeat(width - title.len() - 6)).cyan()
+        );
 
         // Detect code blocks and color them yellow
         let mut in_code_block = false;
@@ -140,7 +143,10 @@ impl Display {
     pub fn stream_box_header(title: &str) {
         let width = 58;
         println!();
-        println!("{}", format!("╭─── {} {}", title, "─".repeat(width - title.len() - 6)).cyan());
+        println!(
+            "{}",
+            format!("╭─── {} {}", title, "─".repeat(width - title.len() - 6)).cyan()
+        );
     }
 
     /// Print the box footer for live streaming

@@ -70,13 +70,14 @@ impl LLMProvider for GroqProvider {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .unwrap_or_else(|_| "Unknown error".to_string());
             anyhow::bail!("Groq API error ({}): {}", status, error_text);
         }
 
-        let groq_response: GroqResponse = response
-            .json()
-            .context("Failed to parse Groq response")?;
+        let groq_response: GroqResponse =
+            response.json().context("Failed to parse Groq response")?;
 
         let content = groq_response
             .choices
@@ -88,7 +89,11 @@ impl LLMProvider for GroqProvider {
         Ok(content)
     }
 
-    fn send_message_stream(&self, messages: &[Message], mut on_chunk: Box<dyn FnMut(&str)>) -> Result<String> {
+    fn send_message_stream(
+        &self,
+        messages: &[Message],
+        mut on_chunk: Box<dyn FnMut(&str)>,
+    ) -> Result<String> {
         use std::io::{BufRead, BufReader};
 
         let request = GroqRequest {
@@ -110,7 +115,9 @@ impl LLMProvider for GroqProvider {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .unwrap_or_else(|_| "Unknown error".to_string());
             anyhow::bail!("Groq API error ({}): {}", status, error_text);
         }
 

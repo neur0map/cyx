@@ -15,7 +15,7 @@ fn main() -> anyhow::Result<()> {
     ];
 
     println!("Query Normalization Examples\n");
-    println!("{:<45} -> {}", "Original", "Normalized");
+    println!("{:<45} -> Normalized", "Original");
     println!("{}", "=".repeat(90));
 
     for query in test_queries {
@@ -29,9 +29,7 @@ fn main() -> anyhow::Result<()> {
     println!("\n{}", "=".repeat(90));
     println!("Hash Collision Test (similar queries should have same hash):\n");
 
-    let similar_queries = vec![
-        ("Show me nmap scan", "NMAP SCAN", "nmap scan"),
-    ];
+    let similar_queries = vec![("Show me nmap scan", "NMAP SCAN", "nmap scan")];
 
     for (q1, q2, q3) in similar_queries {
         let n1 = normalizer.normalize(q1)?;

@@ -17,8 +17,16 @@ impl DuckDuckGo {
         Ok(Self { client })
     }
 
-    pub fn search(&self, query: &str, max_results: usize, trusted_sources: &[String]) -> Result<Vec<SearchResult>> {
-        let url = format!("https://html.duckduckgo.com/html/?q={}", urlencoding::encode(query));
+    pub fn search(
+        &self,
+        query: &str,
+        max_results: usize,
+        trusted_sources: &[String],
+    ) -> Result<Vec<SearchResult>> {
+        let url = format!(
+            "https://html.duckduckgo.com/html/?q={}",
+            urlencoding::encode(query)
+        );
 
         let response = self
             .client
@@ -36,7 +44,12 @@ impl DuckDuckGo {
         Ok(results)
     }
 
-    fn parse_results(&self, html: &str, max_results: usize, trusted_sources: &[String]) -> Result<Vec<SearchResult>> {
+    fn parse_results(
+        &self,
+        html: &str,
+        max_results: usize,
+        trusted_sources: &[String],
+    ) -> Result<Vec<SearchResult>> {
         let mut results = Vec::new();
 
         // Parse DuckDuckGo HTML results
@@ -44,7 +57,8 @@ impl DuckDuckGo {
         let result_regex = Regex::new(r#"<div class="result[^"]*">.*?</div>\s*</div>"#).unwrap();
         let title_regex = Regex::new(r#"<a[^>]*class="result__a"[^>]*>([^<]+)</a>"#).unwrap();
         let url_regex = Regex::new(r#"<a[^>]*class="result__a"[^>]*href="([^"]+)""#).unwrap();
-        let snippet_regex = Regex::new(r#"<a[^>]*class="result__snippet"[^>]*>([^<]+)</a>"#).unwrap();
+        let snippet_regex =
+            Regex::new(r#"<a[^>]*class="result__snippet"[^>]*>([^<]+)</a>"#).unwrap();
 
         for result_match in result_regex.find_iter(html) {
             if results.len() >= max_results {
@@ -92,8 +106,7 @@ impl DuckDuckGo {
         let re = Regex::new(r"uddg=([^&]+)").unwrap();
         re.captures(redirect)
             .and_then(|c| c.get(1))
-            .map(|m| urlencoding::decode(m.as_str()).ok())
-            .flatten()
+            .and_then(|m| urlencoding::decode(m.as_str()).ok())
             .map(|s| s.to_string())
     }
 }

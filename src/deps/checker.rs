@@ -28,10 +28,8 @@ impl Clone for Box<dyn DependencyCheckImpl> {
 
 impl DependencyChecker {
     pub fn new() -> Result<Self> {
-        let checks: Vec<Box<dyn DependencyCheckImpl>> = vec![
-            Box::new(SqliteCheck),
-            Box::new(OllamaCheck),
-        ];
+        let checks: Vec<Box<dyn DependencyCheckImpl>> =
+            vec![Box::new(SqliteCheck), Box::new(OllamaCheck)];
 
         Ok(Self { checks })
     }
@@ -98,9 +96,7 @@ impl DependencyCheckImpl for OllamaCheck {
 
     fn check(&self) -> Result<DependencyStatus> {
         // Try to get version from command line
-        let version_output = Command::new("ollama")
-            .arg("--version")
-            .output();
+        let version_output = Command::new("ollama").arg("--version").output();
 
         if let Ok(output) = version_output {
             if output.status.success() {
@@ -133,9 +129,7 @@ impl DependencyCheckImpl for OllamaCheck {
             "macos" | "linux" => {
                 "Install via: curl -fsSL https://ollama.com/install.sh | sh".to_string()
             }
-            "windows" => {
-                "Download installer from: https://ollama.com/download/windows".to_string()
-            }
+            "windows" => "Download installer from: https://ollama.com/download/windows".to_string(),
             _ => "Visit https://ollama.com for installation instructions".to_string(),
         }
     }

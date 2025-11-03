@@ -21,11 +21,7 @@ impl ContentFetcher {
     pub fn fetch_as_markdown(&self, url: &str) -> Result<String> {
         println!("{} {}", "[~] Fetching:".dimmed(), url.cyan());
 
-        let response = self
-            .client
-            .get(url)
-            .send()
-            .context("Failed to fetch URL")?;
+        let response = self.client.get(url).send().context("Failed to fetch URL")?;
 
         if !response.status().is_success() {
             anyhow::bail!("HTTP error {}: {}", response.status(), url);
@@ -90,12 +86,40 @@ impl ContentFetcher {
 
         for pattern in dangerous_patterns {
             let re = regex::Regex::new(pattern).unwrap();
-            sanitized = re.replace_all(&sanitized, "[removed for security]").to_string();
+            sanitized = re
+                .replace_all(&sanitized, "[removed for security]")
+                .to_string();
         }
 
-        // Remove excessive repetition (potential DoS)
-        let repeat_re = regex::Regex::new(r"(.{1,50})\1{10,}").unwrap();
-        sanitized = repeat_re.replace_all(&sanitized, "$1 [repetition removed]").to_string();
+        // Remove excessive character repetition (potential DoS)
+        // Check for any character repeated 50+ times in a row
+        let mut result = String::with_capacity(sanitized.len());
+        let mut chars = sanitized.chars().peekable();
+
+        while let Some(ch) = chars.next() {
+            let mut count = 1;
+            result.push(ch);
+
+            // Count consecutive identical characters
+            while let Some(&next_ch) = chars.peek() {
+                if next_ch == ch {
+                    count += 1;
+                    chars.next();
+                    if count < 50 {
+                        result.push(ch);
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            // Add marker if excessive repetition was found
+            if count >= 50 {
+                result.push_str(" [repetition removed]");
+            }
+        }
+
+        sanitized = result;
 
         sanitized
     }

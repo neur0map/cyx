@@ -13,7 +13,11 @@ use colored::Colorize;
 pub struct CommandHandler;
 
 impl CommandHandler {
-    pub fn handle(query: Option<String>, command: Option<Commands>, context: CliContext) -> Result<()> {
+    pub fn handle(
+        query: Option<String>,
+        command: Option<Commands>,
+        context: CliContext,
+    ) -> Result<()> {
         match command {
             Some(Commands::Setup) => {
                 Self::setup(&context)?;
@@ -75,19 +79,43 @@ impl CommandHandler {
                 println!("  {:?}", config.provider);
                 println!();
                 println!("{}", "API Keys:".bold());
-                println!("  Groq: {}", if config.api_keys.groq.is_some() { "Set".green() } else { "Not set".dimmed() });
-                println!("  Perplexity: {}", if config.api_keys.perplexity.is_some() { "Set".green() } else { "Not set".dimmed() });
+                println!(
+                    "  Groq: {}",
+                    if config.api_keys.groq.is_some() {
+                        "Set".green()
+                    } else {
+                        "Not set".dimmed()
+                    }
+                );
+                println!(
+                    "  Perplexity: {}",
+                    if config.api_keys.perplexity.is_some() {
+                        "Set".green()
+                    } else {
+                        "Not set".dimmed()
+                    }
+                );
                 println!();
                 println!("{}", "Ollama:".bold());
                 println!("  Model: {}", config.ollama.model.cyan());
                 println!("  Base URL: {}", config.ollama.base_url);
                 println!();
                 println!("{}", "Cache:".bold());
-                println!("  Enabled: {}", if config.cache.enabled { "Yes".green() } else { "No".yellow() });
+                println!(
+                    "  Enabled: {}",
+                    if config.cache.enabled {
+                        "Yes".green()
+                    } else {
+                        "No".yellow()
+                    }
+                );
                 println!("  TTL: {} days", config.cache.ttl_days);
                 println!();
                 println!("{}", "Config file:".dimmed());
-                println!("  {}", Config::config_path()?.display().to_string().dimmed());
+                println!(
+                    "  {}",
+                    Config::config_path()?.display().to_string().dimmed()
+                );
             }
         }
 
@@ -105,14 +133,33 @@ impl CommandHandler {
         for result in results {
             match result.status {
                 DependencyStatus::Installed { ref version } => {
-                    println!("{} {} {}", "[✓]".green(), result.name, format!("({})", version).dimmed());
+                    println!(
+                        "{} {} {}",
+                        "[✓]".green(),
+                        result.name,
+                        format!("({})", version).dimmed()
+                    );
                 }
                 DependencyStatus::NotInstalled => {
-                    println!("{} {} {}", "[✗]".red(), result.name, "(not installed)".dimmed());
+                    println!(
+                        "{} {} {}",
+                        "[✗]".red(),
+                        result.name,
+                        "(not installed)".dimmed()
+                    );
                     println!("    {}", result.instructions.dimmed());
                 }
-                DependencyStatus::WrongVersion { ref current, ref required } => {
-                    println!("{} {} {} {}", "[!]".yellow(), result.name, format!("(current: {}, required: {})", current, required).dimmed(), "(wrong version)".yellow());
+                DependencyStatus::WrongVersion {
+                    ref current,
+                    ref required,
+                } => {
+                    println!(
+                        "{} {} {} {}",
+                        "[!]".yellow(),
+                        result.name,
+                        format!("(current: {}, required: {})", current, required).dimmed(),
+                        "(wrong version)".yellow()
+                    );
                 }
             }
         }
@@ -122,8 +169,8 @@ impl CommandHandler {
     }
 
     fn ollama(action: OllamaAction) -> Result<()> {
-        use crate::llm::OllamaProvider;
         use crate::config::OllamaConfig;
+        use crate::llm::OllamaProvider;
 
         match action {
             OllamaAction::List => {
@@ -132,7 +179,10 @@ impl CommandHandler {
 
                 if models.is_empty() {
                     println!("{}", "No models installed.".yellow());
-                    println!("Use {} to download a model.", "cyx ollama pull <model>".cyan());
+                    println!(
+                        "Use {} to download a model.",
+                        "cyx ollama pull <model>".cyan()
+                    );
                 } else {
                     println!("{}", "Installed Ollama models:".bold());
                     for model in models {
@@ -157,20 +207,19 @@ impl CommandHandler {
 
     fn download_model(size: &str) -> Result<()> {
         use crate::cache::ONNXEmbedder;
-        
+
         let cache_dir = Config::cache_dir()?;
         let models_dir = cache_dir.join("models");
         std::fs::create_dir_all(&models_dir)?;
-        
+
         println!("📦 Downloading ONNX embedding model: {}", size);
-        
-        tokio::runtime::Runtime::new()?.block_on(async {
-            ONNXEmbedder::download_model(size, &models_dir).await
-        })?;
-        
+
+        tokio::runtime::Runtime::new()?
+            .block_on(async { ONNXEmbedder::download_model(size, &models_dir).await })?;
+
         println!("[+] Model downloaded successfully!");
         println!("Location: {}", models_dir.join(size).display());
-        
+
         Ok(())
     }
 
@@ -181,14 +230,20 @@ impl CommandHandler {
         match action {
             CacheAction::Stats => {
                 let stats = storage.stats()?;
-                
+
                 println!("{}", "Cache Statistics".bold().cyan());
                 println!("{}", "─".repeat(60));
-                println!("  Total entries: {}", stats.total_entries.to_string().green());
-                println!("  Cache size: {}", format_bytes(stats.total_size_bytes).green());
+                println!(
+                    "  Total entries: {}",
+                    stats.total_entries.to_string().green()
+                );
+                println!(
+                    "  Cache size: {}",
+                    format_bytes(stats.total_size_bytes).green()
+                );
                 println!("  Hit count: {}", stats.hit_count.to_string().green());
                 println!("  Miss count: {}", stats.miss_count.to_string().yellow());
-                
+
                 let total_requests = stats.hit_count + stats.miss_count;
                 if total_requests > 0 {
                     let hit_rate = (stats.hit_count as f64 / total_requests as f64) * 100.0;
@@ -196,38 +251,60 @@ impl CommandHandler {
                 }
 
                 if let Some(oldest) = stats.oldest_entry {
-                    println!("  Oldest entry: {}", oldest.format("%Y-%m-%d %H:%M:%S").to_string().dimmed());
+                    println!(
+                        "  Oldest entry: {}",
+                        oldest.format("%Y-%m-%d %H:%M:%S").to_string().dimmed()
+                    );
                 }
                 if let Some(newest) = stats.newest_entry {
-                    println!("  Newest entry: {}", newest.format("%Y-%m-%d %H:%M:%S").to_string().dimmed());
+                    println!(
+                        "  Newest entry: {}",
+                        newest.format("%Y-%m-%d %H:%M:%S").to_string().dimmed()
+                    );
                 }
-                
-                println!("  Cache location: {}", cache_dir.display().to_string().dimmed());
+
+                println!(
+                    "  Cache location: {}",
+                    cache_dir.display().to_string().dimmed()
+                );
             }
 
             CacheAction::List { limit } => {
                 let queries = storage.list_all(Some(limit))?;
-                
+
                 if queries.is_empty() {
                     println!("{}", "No cached queries yet.".yellow());
                     println!("Run some queries to populate the cache!");
                     return Ok(());
                 }
 
-                println!("{}", format!("Recent Cached Queries (showing {})", queries.len()).bold().cyan());
+                println!(
+                    "{}",
+                    format!("Recent Cached Queries (showing {})", queries.len())
+                        .bold()
+                        .cyan()
+                );
                 println!("{}", "─".repeat(80));
-                
+
                 for query in queries {
                     println!();
                     println!("  {}: {}", "Query".bold(), query.query_original.cyan());
                     println!("  {}: {}", "Hash".dimmed(), query.query_hash.dimmed());
-                    println!("  {}: {} | {}: {}", 
-                        "Provider".dimmed(), query.provider, 
-                        "Model".dimmed(), query.model);
-                    println!("  {}: {} | {}: {}", 
-                        "Accessed".dimmed(), query.access_count,
-                        "Last access".dimmed(), query.last_accessed.format("%Y-%m-%d %H:%M"));
-                    
+                    println!(
+                        "  {}: {} | {}: {}",
+                        "Provider".dimmed(),
+                        query.provider,
+                        "Model".dimmed(),
+                        query.model
+                    );
+                    println!(
+                        "  {}: {} | {}: {}",
+                        "Accessed".dimmed(),
+                        query.access_count,
+                        "Last access".dimmed(),
+                        query.last_accessed.format("%Y-%m-%d %H:%M")
+                    );
+
                     let response_preview = if query.response.len() > 100 {
                         format!("{}...", &query.response[..100])
                     } else {
@@ -239,10 +316,11 @@ impl CommandHandler {
 
             CacheAction::Clear => {
                 println!("{}", "This will delete all cached queries.".yellow());
-                let confirm = dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
-                    .with_prompt("Are you sure?")
-                    .default(false)
-                    .interact()?;
+                let confirm =
+                    dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
+                        .with_prompt("Are you sure?")
+                        .default(false)
+                        .interact()?;
 
                 if confirm {
                     let count = storage.clear()?;
@@ -255,26 +333,39 @@ impl CommandHandler {
             CacheAction::Remove { hash } => {
                 let removed = storage.remove_by_hash(&hash)?;
                 if removed {
-                    println!("{}", format!("✓ Removed cached query with hash {}", hash).green());
+                    println!(
+                        "{}",
+                        format!("✓ Removed cached query with hash {}", hash).green()
+                    );
                 } else {
-                    println!("{}", format!("Query with hash {} not found in cache", hash).yellow());
+                    println!(
+                        "{}",
+                        format!("Query with hash {} not found in cache", hash).yellow()
+                    );
                 }
             }
 
             CacheAction::Cleanup { days } => {
-                println!("{}", format!("Cleaning up entries older than {} days...", days).cyan());
+                println!(
+                    "{}",
+                    format!("Cleaning up entries older than {} days...", days).cyan()
+                );
                 let count = storage.cleanup_old_entries(days)?;
-                
+
                 if count > 0 {
-                    println!("{}", format!("✓ Removed {} old cache entries", count).green());
+                    println!(
+                        "{}",
+                        format!("✓ Removed {} old cache entries", count).green()
+                    );
                 } else {
                     println!("{}", "No old entries to remove.".dimmed());
                 }
 
                 // Show updated stats
                 let stats = storage.stats()?;
-                println!("\nRemaining: {} entries, {}", 
-                    stats.total_entries, 
+                println!(
+                    "\nRemaining: {} entries, {}",
+                    stats.total_entries,
                     format_bytes(stats.total_size_bytes)
                 );
             }

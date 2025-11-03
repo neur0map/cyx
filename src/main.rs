@@ -7,12 +7,7 @@ fn main() {
     let cli = Cli::parse();
 
     // Create CLI context from flags
-    let context = CliContext::new(
-        cli.quiet,
-        cli.verbose,
-        cli.no_tty,
-        cli.learn,
-    );
+    let context = CliContext::new(cli.quiet, cli.verbose, cli.no_tty, cli.learn);
 
     // Handle commands
     if let Err(e) = CommandHandler::handle(cli.query, cli.command, context) {

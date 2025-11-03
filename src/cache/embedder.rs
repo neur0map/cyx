@@ -43,16 +43,16 @@ impl Embedder {
     pub fn embed(&self, text: &str) -> Vec<f32> {
         let normalized_text = text.to_lowercase();
         let words: Vec<&str> = normalized_text.split_whitespace().collect();
-        
+
         // Create a simple embedding using word frequency and character features
         let mut embedding = vec![0.0; self.dimensions];
-        
+
         // Feature 1: Word count features
         for (i, word) in words.iter().enumerate() {
             let word_hash = Self::hash_string(word) % self.dimensions;
             embedding[word_hash] += 1.0 / (i + 1) as f32; // Position-weighted
         }
-        
+
         // Feature 2: Character trigrams
         for word in &words {
             if word.len() >= 3 {
@@ -63,29 +63,29 @@ impl Embedder {
                 }
             }
         }
-        
+
         // Feature 3: Word length distribution
         let avg_word_len = if !words.is_empty() {
             words.iter().map(|w| w.len()).sum::<usize>() as f32 / words.len() as f32
         } else {
             0.0
         };
-        
+
         if self.dimensions > 10 {
             embedding[self.dimensions - 1] = avg_word_len / 10.0;
             embedding[self.dimensions - 2] = words.len() as f32 / 20.0;
         }
-        
+
         // Normalize
         Self::normalize_vector(&mut embedding);
-        
+
         embedding
     }
 
     fn hash_string(s: &str) -> usize {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         s.hash(&mut hasher);
         hasher.finish() as usize
@@ -115,11 +115,12 @@ impl Embedder {
 
     pub fn load_model_registry() -> Result<ModelRegistry> {
         let registry_path = Self::get_data_path("embedding_models.json")?;
-        let content = std::fs::read_to_string(&registry_path)
-            .with_context(|| format!("Failed to read model registry: {}", registry_path.display()))?;
-        
-        let registry: ModelRegistry = serde_json::from_str(&content)
-            .context("Failed to parse model registry")?;
+        let content = std::fs::read_to_string(&registry_path).with_context(|| {
+            format!("Failed to read model registry: {}", registry_path.display())
+        })?;
+
+        let registry: ModelRegistry =
+            serde_json::from_str(&content).context("Failed to parse model registry")?;
 
         Ok(registry)
     }
@@ -143,19 +144,22 @@ impl Embedder {
         std::fs::create_dir_all(&model_dir)
             .with_context(|| format!("Failed to create directory: {}", model_dir.display()))?;
 
-        println!("📦 Downloading {} model ({} MB)...", model_info.name, model_info.size_mb);
+        println!(
+            "📦 Downloading {} model ({} MB)...",
+            model_info.name, model_info.size_mb
+        );
 
         // Download each file
         for file in &model_info.files {
             let file_path = model_dir.join(&file.name);
-            
+
             if file_path.exists() {
                 println!("  ✓ {} already exists, skipping", file.name);
                 continue;
             }
 
             println!("  ⬇️  Downloading {}...", file.name);
-            
+
             let response = reqwest::get(&file.url)
                 .await
                 .with_context(|| format!("Failed to download {}", file.url))?;
@@ -168,17 +172,24 @@ impl Embedder {
             std::fs::write(&file_path, &bytes)
                 .with_context(|| format!("Failed to write file: {}", file_path.display()))?;
 
-            println!("  ✓ Downloaded {} ({:.1} MB)", file.name, bytes.len() as f64 / 1_048_576.0);
+            println!(
+                "  ✓ Downloaded {} ({:.1} MB)",
+                file.name,
+                bytes.len() as f64 / 1_048_576.0
+            );
         }
 
-        println!("[+] Model '{}' ready at: {}", model_size, model_dir.display());
+        println!(
+            "[+] Model '{}' ready at: {}",
+            model_size,
+            model_dir.display()
+        );
         Ok(())
     }
 
     fn get_data_path(relative_path: &str) -> Result<PathBuf> {
         // Try current directory first
-        let current_dir = std::env::current_dir()
-            .context("Failed to get current directory")?;
+        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
         let current_data = current_dir.join("data").join(relative_path);
         if current_data.exists() {
             return Ok(current_data);

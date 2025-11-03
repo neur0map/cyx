@@ -57,9 +57,7 @@ impl OllamaInstaller {
                 std::thread::sleep(std::time::Duration::from_secs(2));
             }
             "linux" => {
-                let _ = Command::new("systemctl")
-                    .args(["start", "ollama"])
-                    .output();
+                let _ = Command::new("systemctl").args(["start", "ollama"]).output();
                 std::thread::sleep(std::time::Duration::from_secs(2));
             }
             "windows" => {

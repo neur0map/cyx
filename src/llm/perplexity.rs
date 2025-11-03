@@ -70,7 +70,9 @@ impl LLMProvider for PerplexityProvider {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .unwrap_or_else(|_| "Unknown error".to_string());
             anyhow::bail!("Perplexity API error ({}): {}", status, error_text);
         }
 
@@ -88,7 +90,11 @@ impl LLMProvider for PerplexityProvider {
         Ok(content)
     }
 
-    fn send_message_stream(&self, messages: &[Message], mut on_chunk: Box<dyn FnMut(&str)>) -> Result<String> {
+    fn send_message_stream(
+        &self,
+        messages: &[Message],
+        mut on_chunk: Box<dyn FnMut(&str)>,
+    ) -> Result<String> {
         use std::io::{BufRead, BufReader};
 
         let request = PerplexityRequest {
@@ -110,7 +116,9 @@ impl LLMProvider for PerplexityProvider {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .unwrap_or_else(|_| "Unknown error".to_string());
             anyhow::bail!("Perplexity API error ({}): {}", status, error_text);
         }
 

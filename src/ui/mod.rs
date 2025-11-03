@@ -1,5 +1,5 @@
-pub mod table;
 pub mod display;
+pub mod table;
 
-pub use table::TableFormatter;
 pub use display::Display;
+pub use table::TableFormatter;

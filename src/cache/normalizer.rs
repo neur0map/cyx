@@ -60,9 +60,9 @@ impl QueryNormalizer {
         let path = Self::get_data_path("normalization/abbreviations.json")?;
         let content = fs::read_to_string(&path)
             .with_context(|| format!("Failed to read abbreviations file: {}", path.display()))?;
-        
-        let data: AbbreviationsData = serde_json::from_str(&content)
-            .context("Failed to parse abbreviations JSON")?;
+
+        let data: AbbreviationsData =
+            serde_json::from_str(&content).context("Failed to parse abbreviations JSON")?;
 
         Ok(data.abbreviations)
     }
@@ -71,18 +71,17 @@ impl QueryNormalizer {
         let path = Self::get_data_path("normalization/stopwords.json")?;
         let content = fs::read_to_string(&path)
             .with_context(|| format!("Failed to read stopwords file: {}", path.display()))?;
-        
-        let data: StopwordsData = serde_json::from_str(&content)
-            .context("Failed to parse stopwords JSON")?;
+
+        let data: StopwordsData =
+            serde_json::from_str(&content).context("Failed to parse stopwords JSON")?;
 
         Ok(data.stopwords.into_iter().collect())
     }
 
     fn get_data_path(relative_path: &str) -> Result<std::path::PathBuf> {
         // Try relative to executable first
-        let exe_path = std::env::current_exe()
-            .context("Failed to get executable path")?;
-        
+        let exe_path = std::env::current_exe().context("Failed to get executable path")?;
+
         if let Some(exe_dir) = exe_path.parent() {
             // Check in release/debug build directories
             let build_data = exe_dir.join("../../../data").join(relative_path);
@@ -92,15 +91,17 @@ impl QueryNormalizer {
         }
 
         // Try current directory
-        let current_dir = std::env::current_dir()
-            .context("Failed to get current directory")?;
+        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
         let current_data = current_dir.join("data").join(relative_path);
         if current_data.exists() {
             return Ok(current_data);
         }
 
         // Try from project root (for tests)
-        let project_root = current_dir.join("../../..").join("data").join(relative_path);
+        let project_root = current_dir
+            .join("../../..")
+            .join("data")
+            .join(relative_path);
         if project_root.exists() {
             return Ok(project_root);
         }
@@ -149,7 +150,7 @@ impl QueryNormalizer {
         for word in words {
             // Remove trailing punctuation for matching
             let clean_word = word.trim_end_matches(|c: char| !c.is_alphanumeric());
-            
+
             if let Some(expansion) = self.abbreviations.get(clean_word) {
                 expanded.push(expansion.as_str());
             } else {
@@ -254,10 +255,12 @@ mod tests {
 
     #[test]
     fn test_punctuation_removal() {
-        let mut config = NormalizationConfig::default();
-        config.remove_punctuation = true;
-        config.remove_stopwords = false;
-        
+        let config = NormalizationConfig {
+            remove_punctuation: true,
+            remove_stopwords: false,
+            ..Default::default()
+        };
+
         let normalizer = QueryNormalizer {
             config,
             abbreviations: HashMap::new(),
@@ -278,8 +281,13 @@ mod tests {
     #[test]
     fn test_complex_query() {
         let normalizer = create_test_normalizer();
-        let result = normalizer.normalize("Show me how to do an nmap SYN scan for sqli testing").unwrap();
-        assert_eq!(result, "network mapper nmap stealth synchronize scan sql injection testing");
+        let result = normalizer
+            .normalize("Show me how to do an nmap SYN scan for sqli testing")
+            .unwrap();
+        assert_eq!(
+            result,
+            "network mapper nmap stealth synchronize scan sql injection testing"
+        );
     }
 
     #[test]
@@ -295,7 +303,7 @@ mod tests {
     #[test]
     fn test_similar_queries_same_hash() {
         let normalizer = create_test_normalizer();
-        
+
         let query1 = "show me nmap scan";
         let query2 = "Show Me NMAP Scan";
         let query3 = "nmap scan";
@@ -315,7 +323,7 @@ mod tests {
     #[test]
     fn test_different_queries_different_hash() {
         let normalizer = create_test_normalizer();
-        
+
         let query1 = "nmap scan";
         let query2 = "nmap privesc";
 

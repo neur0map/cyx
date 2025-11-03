@@ -1,5 +1,5 @@
 /// Runtime context for CLI flags and options
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct CliContext {
     pub quiet: bool,
     pub verbose: bool,
@@ -35,16 +35,5 @@ impl CliContext {
     /// Check if we should show verbose debug info
     pub fn should_show_verbose(&self) -> bool {
         self.verbose
-    }
-}
-
-impl Default for CliContext {
-    fn default() -> Self {
-        Self {
-            quiet: false,
-            verbose: false,
-            no_tty: false,
-            learn: false,
-        }
     }
 }

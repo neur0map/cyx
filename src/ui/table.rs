@@ -15,9 +15,15 @@ impl TableFormatter {
         let mut table = Table::new();
         table
             .set_header(vec![
-                Cell::new("Source").fg(Color::Cyan).add_attribute(Attribute::Bold),
-                Cell::new("Title").fg(Color::Cyan).add_attribute(Attribute::Bold),
-                Cell::new("Snippet").fg(Color::Cyan).add_attribute(Attribute::Bold),
+                Cell::new("Source")
+                    .fg(Color::Cyan)
+                    .add_attribute(Attribute::Bold),
+                Cell::new("Title")
+                    .fg(Color::Cyan)
+                    .add_attribute(Attribute::Bold),
+                Cell::new("Snippet")
+                    .fg(Color::Cyan)
+                    .add_attribute(Attribute::Bold),
             ])
             .set_content_arrangement(ContentArrangement::Dynamic);
 
@@ -56,10 +62,7 @@ impl TableFormatter {
         table.set_content_arrangement(ContentArrangement::Dynamic);
 
         for (key, value) in items {
-            table.add_row(vec![
-                Cell::new(*key).fg(Color::Cyan),
-                Cell::new(*value),
-            ]);
+            table.add_row(vec![Cell::new(*key).fg(Color::Cyan), Cell::new(*value)]);
         }
 
         println!("\n{}", table);

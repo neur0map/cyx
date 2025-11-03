@@ -56,56 +56,68 @@ impl InteractiveSession {
             // Check if we have a cached response (exact match)
             if let Some(cached) = storage.get_by_hash(&hash)? {
                 if !context.quiet {
-                    Display::info(&format!("[*] Cache hit! (exact match)"));
+                    Display::info("[*] Cache hit! (exact match)");
                 }
 
                 // Display cached response
                 Display::stream_box_section("RESPONSE", &cached.response);
-                
+
                 if !context.quiet {
                     println!();
                     Display::sources_with_links(
                         &cached.provider,
                         &cached.model,
                         false, // We don't track web search for cache
-                        &[], // No sources in cache
+                        &[],   // No sources in cache
                     );
                     println!();
-                    println!("{}", format!("Cached {} ago • Accessed {} times", 
-                        format_duration_ago(&cached.created_at),
-                        cached.access_count
-                    ).dimmed());
+                    println!(
+                        "{}",
+                        format!(
+                            "Cached {} ago • Accessed {} times",
+                            format_duration_ago(&cached.created_at),
+                            cached.access_count
+                        )
+                        .dimmed()
+                    );
                 }
-                
+
                 return Ok(());
             }
 
             // Try vector similarity search
-            let similar_results = storage.search_similar(&normalized, config.cache.similarity_threshold, 1)?;
+            let similar_results =
+                storage.search_similar(&normalized, config.cache.similarity_threshold, 1)?;
             if let Some((cached, similarity)) = similar_results.first() {
                 if !context.quiet {
-                    Display::info(&format!("[*] Cache hit! (similar match: {:.0}%)", similarity * 100.0));
+                    Display::info(&format!(
+                        "[*] Cache hit! (similar match: {:.0}%)",
+                        similarity * 100.0
+                    ));
                 }
 
                 // Display cached response
                 Display::stream_box_section("RESPONSE", &cached.response);
-                
+
                 if !context.quiet {
                     println!();
-                    Display::sources_with_links(
-                        &cached.provider,
-                        &cached.model,
-                        false,
-                        &[],
-                    );
+                    Display::sources_with_links(&cached.provider, &cached.model, false, &[]);
                     println!();
-                    println!("{}", format!("Similar to: \"{}\"", cached.query_original).dimmed());
-                    println!("{}", format!("Cached {} ago • Accessed {} times", 
-                        format_duration_ago(&cached.created_at),
-                        cached.access_count
-                    ).dimmed());
+                    println!(
+                        "{}",
+                        format!("Similar to: \"{}\"", cached.query_original).dimmed()
+                    );
+                    println!(
+                        "{}",
+                        format!(
+                            "Cached {} ago • Accessed {} times",
+                            format_duration_ago(&cached.created_at),
+                            cached.access_count
+                        )
+                        .dimmed()
+                    );
                 }
-                
+
                 return Ok(());
             } else if !context.quiet {
                 Display::info("Cache miss - calling API...");
@@ -153,7 +165,9 @@ impl InteractiveSession {
 
         // Create progress bar
         let pb = if self.context.should_show_progress() && !self.context.no_tty {
-            Some(Arc::new(Display::create_progress_bar("Getting response...")))
+            Some(Arc::new(Display::create_progress_bar(
+                "Getting response...",
+            )))
         } else {
             None
         };
@@ -197,7 +211,7 @@ impl InteractiveSession {
                 *count += chunk.len();
 
                 // Update progress bar periodically
-                if *count % 50 == 0 || *count < 50 {
+                if (*count).is_multiple_of(50) || *count < 50 {
                     if let Some(ref progress) = pb_clone {
                         progress.set_message(format!("Streaming... {} chars", *count));
                     }
@@ -253,8 +267,8 @@ impl InteractiveSession {
                             // If we're in sources section, print links with animation
                             if *sources_started {
                                 let line = buffer.trim();
-                                if line.starts_with("- ") {
-                                    Display::print_link_animated(&line[2..]);
+                                if let Some(stripped) = line.strip_prefix("- ") {
+                                    Display::print_link_animated(stripped);
                                 }
                                 buffer.clear();
                                 continue;
@@ -289,8 +303,8 @@ impl InteractiveSession {
                 let sources_started = sources_started.lock().unwrap();
                 if *sources_started {
                     let line = buffer.trim();
-                    if line.starts_with("- ") {
-                        Display::print_link_animated(&line[2..]);
+                    if let Some(stripped) = line.strip_prefix("- ") {
+                        Display::print_link_animated(stripped);
                     }
                 } else {
                     let in_code = in_code_block.lock().unwrap();
@@ -336,7 +350,9 @@ impl InteractiveSession {
 
         // Create progress bar
         let pb = if self.context.should_show_progress() && !self.context.no_tty {
-            Some(Arc::new(Display::create_progress_bar("Getting response...")))
+            Some(Arc::new(Display::create_progress_bar(
+                "Getting response...",
+            )))
         } else {
             None
         };
@@ -373,7 +389,7 @@ impl InteractiveSession {
                 *count += chunk.len();
 
                 // Update progress bar periodically
-                if *count % 50 == 0 || *count < 50 {
+                if (*count).is_multiple_of(50) || *count < 50 {
                     if let Some(ref progress) = pb_clone {
                         progress.set_message(format!("Streaming... {} chars", *count));
                     }
@@ -430,8 +446,8 @@ impl InteractiveSession {
                             // If we're in sources section, print links with animation
                             if *sources_started {
                                 let line = buffer.trim();
-                                if line.starts_with("- ") {
-                                    Display::print_link_animated(&line[2..]);
+                                if let Some(stripped) = line.strip_prefix("- ") {
+                                    Display::print_link_animated(stripped);
                                 }
                                 buffer.clear();
                                 continue;
@@ -467,8 +483,8 @@ impl InteractiveSession {
                 if *sources_started {
                     // Remaining link content
                     let line = buffer.trim();
-                    if line.starts_with("- ") {
-                        Display::print_link_animated(&line[2..]);
+                    if let Some(stripped) = line.strip_prefix("- ") {
+                        Display::print_link_animated(stripped);
                     }
                 } else {
                     // Remaining response content
@@ -505,9 +521,9 @@ impl InteractiveSession {
             for line in sources_section.lines().skip(1) {
                 // Skip "[SOURCES]" line
                 let line = line.trim();
-                if line.starts_with('-') {
+                if let Some(stripped) = line.strip_prefix('-') {
                     // Remove leading "- " and add to sources
-                    sources.push(line[1..].trim().to_string());
+                    sources.push(stripped.trim().to_string());
                 }
             }
 
