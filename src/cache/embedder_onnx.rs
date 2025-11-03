@@ -249,10 +249,8 @@ impl ONNXEmbedder {
     }
 
     pub fn get_model_info(model_size: &str) -> Result<ModelInfo> {
-        let registry_path = Self::get_data_path("embedding_models.json")?;
-        let content = std::fs::read_to_string(&registry_path).with_context(|| {
-            format!("Failed to read model registry: {}", registry_path.display())
-        })?;
+        // Embed the model registry data at compile time
+        const MODELS_JSON: &str = include_str!("../../data/embedding_models.json");
 
         #[derive(Deserialize)]
         struct Registry {
@@ -260,7 +258,7 @@ impl ONNXEmbedder {
         }
 
         let registry: Registry =
-            serde_json::from_str(&content).context("Failed to parse model registry")?;
+            serde_json::from_str(MODELS_JSON).context("Failed to parse embedded model registry")?;
 
         registry
             .models
@@ -316,24 +314,4 @@ impl ONNXEmbedder {
         Ok(())
     }
 
-    fn get_data_path(relative_path: &str) -> Result<PathBuf> {
-        // Try current directory first
-        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
-        let current_data = current_dir.join("data").join(relative_path);
-        if current_data.exists() {
-            return Ok(current_data);
-        }
-
-        // Try relative to executable
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(exe_dir) = exe_path.parent() {
-                let build_data = exe_dir.join("../../../data").join(relative_path);
-                if build_data.exists() {
-                    return Ok(build_data);
-                }
-            }
-        }
-
-        anyhow::bail!("Could not find data file: {}", relative_path)
-    }
 }

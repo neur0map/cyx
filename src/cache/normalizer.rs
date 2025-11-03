@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::fs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NormalizationConfig {
@@ -57,57 +56,26 @@ impl QueryNormalizer {
     }
 
     fn load_abbreviations() -> Result<HashMap<String, String>> {
-        let path = Self::get_data_path("normalization/abbreviations.json")?;
-        let content = fs::read_to_string(&path)
-            .with_context(|| format!("Failed to read abbreviations file: {}", path.display()))?;
-
+        // Embed the abbreviations data at compile time
+        const ABBREVIATIONS_JSON: &str = include_str!("../../data/normalization/abbreviations.json");
+        
         let data: AbbreviationsData =
-            serde_json::from_str(&content).context("Failed to parse abbreviations JSON")?;
+            serde_json::from_str(ABBREVIATIONS_JSON).context("Failed to parse embedded abbreviations JSON")?;
 
         Ok(data.abbreviations)
     }
 
     fn load_stopwords() -> Result<HashSet<String>> {
-        let path = Self::get_data_path("normalization/stopwords.json")?;
-        let content = fs::read_to_string(&path)
-            .with_context(|| format!("Failed to read stopwords file: {}", path.display()))?;
-
+        // Embed the stopwords data at compile time
+        const STOPWORDS_JSON: &str = include_str!("../../data/normalization/stopwords.json");
+        
         let data: StopwordsData =
-            serde_json::from_str(&content).context("Failed to parse stopwords JSON")?;
+            serde_json::from_str(STOPWORDS_JSON).context("Failed to parse embedded stopwords JSON")?;
 
         Ok(data.stopwords.into_iter().collect())
     }
 
-    fn get_data_path(relative_path: &str) -> Result<std::path::PathBuf> {
-        // Try relative to executable first
-        let exe_path = std::env::current_exe().context("Failed to get executable path")?;
 
-        if let Some(exe_dir) = exe_path.parent() {
-            // Check in release/debug build directories
-            let build_data = exe_dir.join("../../../data").join(relative_path);
-            if build_data.exists() {
-                return Ok(build_data);
-            }
-        }
-
-        // Try current directory
-        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
-        let current_data = current_dir.join("data").join(relative_path);
-        if current_data.exists() {
-            return Ok(current_data);
-        }
-
-        // Try from project root (for tests)
-        let project_root = current_dir
-            .join("../../..")
-            .join("data")
-            .join(relative_path);
-        if project_root.exists() {
-            return Ok(project_root);
-        }
-
-        anyhow::bail!("Could not find data file: {}", relative_path)
-    }
 
     pub fn normalize(&self, query: &str) -> Result<String> {
         let mut normalized = query.to_string();
