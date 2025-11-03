@@ -36,6 +36,8 @@ indicatif = "0.18"
 
 # System paths
 directories = "5.0"
+dirs = "5.0"
+walkdir = "2.5"
 
 # Error handling
 anyhow = "1.0.100"

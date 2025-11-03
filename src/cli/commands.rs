@@ -3,7 +3,7 @@ use super::context::CliContext;
 use crate::{
     cache::CacheStorage,
     config::{Config, ConfigManager},
-    deps::{DependencyChecker, DependencyStatus},
+    deps::{DependencyChecker, DependencyStatus, OnnxLibraryFixer},
     session::InteractiveSession,
     ui::Display,
 };
@@ -51,6 +51,11 @@ impl CommandHandler {
     }
 
     fn setup(_context: &CliContext) -> Result<()> {
+        // Check and fix ONNX library issues first
+        println!();
+        OnnxLibraryFixer::auto_fix()?;
+        println!();
+        
         ConfigManager::interactive_setup()?;
         Ok(())
     }
