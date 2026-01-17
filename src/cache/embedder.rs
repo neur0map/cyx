@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelInfo {
@@ -184,7 +184,6 @@ impl Embedder {
         );
         Ok(())
     }
-
 }
 
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {

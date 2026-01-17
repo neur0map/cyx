@@ -55,7 +55,7 @@ impl CommandHandler {
         println!();
         OnnxLibraryFixer::auto_fix()?;
         println!();
-        
+
         ConfigManager::interactive_setup()?;
         Ok(())
     }

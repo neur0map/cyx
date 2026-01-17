@@ -18,14 +18,14 @@ fn main() {
             eprintln!();
             Display::error("ONNX Runtime library error detected!");
             eprintln!();
-            
+
             // Try to auto-fix
             if OnnxLibraryFixer::auto_fix().unwrap_or(false) {
                 Display::info("Please try running the command again.");
                 std::process::exit(0);
             }
         }
-        
+
         Display::error(&format!("Error: {}", e));
         std::process::exit(1);
     }

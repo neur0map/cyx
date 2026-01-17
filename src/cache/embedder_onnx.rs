@@ -3,7 +3,7 @@ use ndarray::{Array2, ArrayView2, Axis, CowArray};
 use ort::{Environment, GraphOptimizationLevel, LoggingLevel, Session, SessionBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 use tokenizers::Tokenizer;
 
@@ -38,7 +38,7 @@ impl ONNXEmbedder {
         let mut error_msg = String::from(
             "\n╭─────────────────────────────────────────────────────────────────╮\n\
              │ ⚠️  ONNX Runtime Library Not Found                              │\n\
-             ╰─────────────────────────────────────────────────────────────────╯\n\n"
+             ╰─────────────────────────────────────────────────────────────────╯\n\n",
         );
 
         error_msg.push_str("The ONNX Runtime shared library is required but not installed.\n");
@@ -58,7 +58,8 @@ impl ONNXEmbedder {
                 error_msg.push_str("  cp libonnxruntime.so.1.16.0 $(dirname $(which cyx))/\n");
             }
             "macos" => {
-                error_msg.push_str("For macOS, the release includes libonnxruntime.1.16.0.dylib\n\n");
+                error_msg
+                    .push_str("For macOS, the release includes libonnxruntime.1.16.0.dylib\n\n");
                 error_msg.push_str("Install it with:\n");
                 error_msg.push_str("  sudo cp libonnxruntime.1.16.0.dylib /usr/local/lib/\n\n");
                 error_msg.push_str("Or place it in the same directory as the cyx binary:\n");
@@ -313,5 +314,4 @@ impl ONNXEmbedder {
         println!("[+] Model '{}' ready!", model_size);
         Ok(())
     }
-
 }

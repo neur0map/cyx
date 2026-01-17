@@ -57,10 +57,11 @@ impl QueryNormalizer {
 
     fn load_abbreviations() -> Result<HashMap<String, String>> {
         // Embed the abbreviations data at compile time
-        const ABBREVIATIONS_JSON: &str = include_str!("../../data/normalization/abbreviations.json");
-        
-        let data: AbbreviationsData =
-            serde_json::from_str(ABBREVIATIONS_JSON).context("Failed to parse embedded abbreviations JSON")?;
+        const ABBREVIATIONS_JSON: &str =
+            include_str!("../../data/normalization/abbreviations.json");
+
+        let data: AbbreviationsData = serde_json::from_str(ABBREVIATIONS_JSON)
+            .context("Failed to parse embedded abbreviations JSON")?;
 
         Ok(data.abbreviations)
     }
@@ -68,14 +69,12 @@ impl QueryNormalizer {
     fn load_stopwords() -> Result<HashSet<String>> {
         // Embed the stopwords data at compile time
         const STOPWORDS_JSON: &str = include_str!("../../data/normalization/stopwords.json");
-        
-        let data: StopwordsData =
-            serde_json::from_str(STOPWORDS_JSON).context("Failed to parse embedded stopwords JSON")?;
+
+        let data: StopwordsData = serde_json::from_str(STOPWORDS_JSON)
+            .context("Failed to parse embedded stopwords JSON")?;
 
         Ok(data.stopwords.into_iter().collect())
     }
-
-
 
     pub fn normalize(&self, query: &str) -> Result<String> {
         let mut normalized = query.to_string();
