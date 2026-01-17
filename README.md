@@ -2,6 +2,12 @@
 
 Fast, simple command-line security tool powered by AI. Install with cargo, set up in 30 seconds or less. This tool is solely to give you commands you often forget; it will not provide follow-up solutions to your problems or results.
 
+## Demo
+
+[▶️ Watch the demo video](./cyx.mp4)
+
+*See cyx in action - quick command lookups, learn mode, and more!*
+
 ## Features
 
 - Simple Setup: `cargo install cyx` + 30-second wizard
