@@ -1,154 +1,119 @@
 # Installation Guide
 
-Complete installation instructions for cyx.
+Simple installation instructions for cyx.
 
-## Quick Install (Recommended)
-
-**One-line installer** for Linux/macOS:
+## Installation
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/scripts/install.sh | bash
-```
-
-This will:
-- Download the latest release for your platform
-- Install to `~/.local/bin` (or custom location via `INSTALL_DIR`)
-- Handle the ONNX Runtime library automatically
-- Add to PATH if needed
-- Run the setup wizard
-
-**Custom installation directory:**
-```bash
-INSTALL_DIR=/usr/local/bin curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/scripts/install.sh | bash
-```
-
-## Manual Installation
-
-**Note**: Pre-built binaries are available in GitHub Releases.
-
-Download the latest release from [Releases page](https://github.com/neur0map/cyx/releases) and run:
-
-```bash
-# Extract the archive
-tar -xzf cyx-v0.2.1-linux-x86_64.tar.gz
-cd cyx-v0.2.1-linux-x86_64
-
-# Run the installer script
-bash install.sh
-```
-
-Or manually copy both files:
-```bash
-mkdir -p ~/.local/bin
-cp cyx ~/.local/bin/
-cp libonnxruntime* ~/.local/bin/
-export PATH="$HOME/.local/bin:$PATH"
+cargo install cyx
 cyx setup
 ```
 
-**Important**: The `cyx` binary requires the ONNX Runtime library. Both files must be kept together in the same directory.
+That's it! Takes about 30 seconds.
+
+## Requirements
+
+- **Rust toolchain** - Install from [rustup.rs](https://rustup.rs)
+- **API key** - From [Groq](https://console.groq.com/) (recommended) or [Perplexity](https://www.perplexity.ai/settings/api)
+
+## Setup Wizard
+
+The setup wizard will guide you through:
+
+1. **Provider Selection**: Choose Groq (recommended) or Perplexity
+2. **API Key**: Enter your API key
+3. **Validation**: Tests connection and saves config
+
+The wizard auto-enables smart caching with default settings for optimal performance.
+
+## Configuration
+
+Your configuration is saved to `~/.config/cyx/config.toml` with secure permissions (600).
+
+### View Configuration
+
+```bash
+cyx config show
+```
+
+### Change Provider
+
+```bash
+cyx config set provider perplexity
+cyx config set perplexity_api_key "pplx_..."
+```
+
+### Re-run Setup
+
+```bash
+cyx setup
+```
+
+## Advanced: Ollama (Local Models)
+
+For users who want to run local models:
+
+1. **Install Ollama**: Download from [ollama.com](https://ollama.com)
+2. **Download a model**: `ollama pull mistral:7b-instruct`
+3. **Configure cyx**:
+   ```bash
+   cyx config set provider ollama
+   cyx config set ollama_model "mistral:7b-instruct"
+   ```
+
+Note: Ollama is for advanced users and requires manual setup.
 
 ## Build from Source
 
-### Prerequisites
-
-- Rust 1.70 or higher
-- API key from [Perplexity](https://www.perplexity.ai/settings/api) or [Groq](https://console.groq.com)
-
-### Quick Build
+If you want to build from source:
 
 ```bash
 git clone https://github.com/neur0map/cyx.git
 cd cyx
-make install  # Builds, installs binary and library
-cyx setup
-```
-
-### Using Cargo Install
-
-```bash
-# Clone and navigate to the repository
-git clone https://github.com/neur0map/cyx.git
-cd cyx
-
-# Install the binary
 cargo install --path .
-
-# Run setup - it will auto-detect and fix ONNX library issues
 cyx setup
 ```
 
-**Auto-Fix Feature**: When you run `cyx setup` or any command, cyx will automatically detect if the ONNX Runtime library is missing and attempt to fix it by:
-1. Locating the library in your cargo build cache
-2. Copying it to the binary directory
-3. Providing manual instructions if auto-fix fails
-
-**Manual Copy** (if auto-fix doesn't work):
-```bash
-INSTALL_DIR=$(dirname $(which cyx))
-cp target/release/libonnxruntime* $INSTALL_DIR/
-```
-
-### Makefile Commands
-
-```bash
-make build    # Build and create symlink for development
-make check    # Run fmt + clippy
-make install  # Install to system (includes library)
-make setup    # Run setup wizard
-make help     # Show all commands
-```
-
-## Initial Configuration
-
-After installation, run the interactive setup wizard:
-
-```bash
-cyx setup
-```
-
-This creates `~/.config/cyx/config.toml` with your API key (stored with 600 permissions).
+The `ort` crate automatically downloads the ONNX Runtime library during build.
 
 ## Troubleshooting
 
-### Error: libonnxruntime.so.1.16.0: cannot open shared object file
+### ONNX Library Errors
 
-This error means the ONNX Runtime library is not in the library search path.
+If you see errors about `libonnxruntime`, cyx will automatically attempt to fix it when you run:
 
-**Automatic Fix:**
-
-Simply run:
 ```bash
 cyx setup
 ```
 
-Cyx will automatically detect the missing library and attempt to fix it by:
-- Searching for the library in your cargo build cache
-- Copying it to the correct location
-- Providing manual instructions if needed
+The auto-fix will:
+- Locate the ONNX library in your cargo cache
+- Copy it to the correct location
+- Provide manual instructions if needed
 
-**Manual Solutions:**
+### API Key Issues
 
-If auto-fix doesn't work:
+If provider connection fails during setup:
+- Verify your API key is correct
+- Check network connectivity
+- Try running: `cyx "test query"` to test manually
 
-1. **For cargo install users**:
-   ```bash
-   # Copy from build cache
-   INSTALL_DIR=$(dirname $(which cyx))
-   cp target/release/libonnxruntime* $INSTALL_DIR/
-   ```
+### System Dependencies
 
-2. **For release downloads**: Extract the full archive and ensure both files are together:
-   ```bash
-   # Both files should be in the same directory
-   ls -l
-   # Should show: cyx and libonnxruntime.so.1.16.0 (or .dylib on macOS)
-   ```
+For cloud providers (Groq/Perplexity), no system dependencies are required!
 
-3. **System-wide installation**:
-   ```bash
-   sudo cp libonnxruntime* /usr/local/lib/
-   sudo ldconfig  # Linux only
-   ```
+Check your system status:
+```bash
+cyx doctor
+```
 
-For more detailed troubleshooting, see [BUILDING.md](BUILDING.md).
+## Uninstall
+
+```bash
+cargo uninstall cyx
+rm -rf ~/.config/cyx ~/.cache/cyx
+```
+
+## Next Steps
+
+See [USAGE.md](USAGE.md) for examples and advanced features.

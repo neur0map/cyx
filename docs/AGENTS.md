@@ -93,7 +93,6 @@ cyx/
 ├── data/             # Embedded data (normalization, models)
 ├── tests/            # Integration tests
 ├── docs/             # All documentation (you are here)
-├── scripts/          # Build and install scripts
 └── openspec/         # Spec-driven development system
 ```
 

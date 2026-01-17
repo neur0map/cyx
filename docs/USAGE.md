@@ -51,13 +51,17 @@ Cache location: /Users/you/Library/Caches/cyx
 - Format: SQLite database
 - TTL: 30 days (configurable via `cyx config set cache.ttl_days 60`)
 
-## Ollama Local Models
+## Ollama Local Models (Advanced)
+
+**Note**: For most users, cloud providers (Groq/Perplexity) are recommended. Ollama requires manual installation and setup.
 
 Run LLMs locally with zero API costs:
 
 ```bash
-# Check if Ollama is available
-cyx doctor
+# Install Ollama first: https://ollama.com
+# Then configure cyx
+cyx config set provider ollama
+cyx config set ollama_model "mistral:7b-instruct"
 
 # List installed models
 cyx ollama list
@@ -75,7 +79,7 @@ cyx "nmap stealth scan"  # Uses local model
 ### Recommended Models
 
 - `llama3.2:3b` - Fast (2 GB)
-- `mistral:7b-instruct` - Balanced (4.1 GB) [RECOMMENDED]
+- `mistral:7b-instruct` - Balanced (4.1 GB)
 - `mixtral:8x7b` - High quality (26 GB)
 - `codellama:7b-instruct` - Code-focused (3.8 GB)
 

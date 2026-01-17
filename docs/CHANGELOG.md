@@ -2,6 +2,79 @@
 
 ## [Unreleased]
 
+## v0.2.2 - 2025-01-17
+
+### Changed - Major Installation Simplification
+
+**Installation**: Simplified to cargo-only installation for extreme simplicity and ease of use
+- **Removed**: GitHub shell installer (`install.sh`), release workflow, binary distribution
+- **Single method**: `cargo install cyx` is now the only installation method
+- **Setup time**: Reduced from 5-10 minutes to ~30 seconds for new users
+
+**Setup Wizard**: Streamlined from 6 steps to 2 steps
+- Removed dependency checking display
+- Removed Ollama auto-installation prompts
+- Auto-enabled cache with smart defaults (no prompts)
+- Provider priority: Groq first (recommended), Perplexity second, Ollama last (advanced)
+
+**Update System**: Simplified to message-only
+- Removed binary downloader and installer modules
+- Update command now displays: `cargo install cyx --force`
+- Removed GitHub release checking (crates.io only)
+
+**Provider Priority**: Cloud-first approach
+- Groq marked as `[RECOMMENDED]` in setup wizard
+- Perplexity as second option
+- Ollama de-emphasized to "advanced, requires manual setup"
+- Doctor command shows "no dependencies needed" for cloud providers
+
+### Removed
+
+- **Installation infrastructure**:
+  - `scripts/install.sh` (250 lines)
+  - `scripts/package-release.sh` (239 lines)
+  - `scripts/cyx-launcher.sh` (4.4KB)
+  - `.github/workflows/release.yml` (220 lines)
+- **Update system modules**:
+  - `src/update/installer.rs` (entire file)
+  - `src/update/downloader.rs` (entire file)
+  - `InstallSource` enum from metadata
+- **Unused data files**:
+  - `data/dependencies.json`
+  - `data/ollama_models.json`
+- **Dependencies**: tar, flate2, sha2 (no longer needed)
+
+### Technical
+
+- ONNX Runtime auto-handled by `ort` crate's `download-binaries` feature
+- Cache embedding data (normalization, stopwords) still embedded in binary
+- Config format unchanged (fully backward compatible)
+- Ollama commands kept but marked as advanced features
+
+### Documentation
+
+- **README.md**: Complete installation section rewrite (cargo-only)
+- **INSTALLATION.md**: Simplified from 155 to 120 lines
+- **BUILDING.md**: Rewritten to focus on crates.io publishing (234 lines)
+- **DEVELOPMENT.md**: Updated release workflow for cargo publishing
+- All docs updated to reflect cloud-first, cargo-only approach
+
+### Migration for Existing Users
+
+Existing installations continue to work (config compatible). To migrate:
+```bash
+cargo install cyx  # New cargo-based installation
+# Existing config at ~/.config/cyx/config.toml works unchanged
+```
+
+### Impact
+
+- **New users**: Install to first query in ~60 seconds
+- **Simplicity**: One command installation, two-step setup
+- **Maintenance**: Eliminated ~1000 lines of installation/packaging code
+- **Updates**: Simpler update path via cargo
+- **Focus**: Cloud providers (Groq/Perplexity) prioritized over local models
+
 ## v0.2.1 - 2025-11-03
 
 ### Changed

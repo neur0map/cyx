@@ -39,7 +39,6 @@ cyx/
 │   └── ui/           # Terminal UI & formatting
 ├── data/             # Embedded data files (normalization, models)
 ├── tests/            # Integration tests
-├── scripts/          # Build and installation scripts
 ├── docs/             # Documentation
 └── openspec/         # Spec-driven development workflow
 ```
@@ -120,13 +119,9 @@ cargo build --release
 # Output: target/release/cyx
 ```
 
-### Cross-Platform Builds
+### Cross-Platform Compatibility
 
-GitHub Actions automatically builds for:
-- Linux (x86_64, aarch64)
-- macOS (x86_64, aarch64)
-
-See `.github/workflows/release.yml` for details.
+The crate is published to crates.io and cargo automatically handles platform-specific builds during user installation.
 
 ## Architecture Patterns
 
@@ -147,30 +142,34 @@ LLM providers (Perplexity, Groq, Ollama) implement a common interface:
 
 Critical data files (ONNX model, tokenizer, normalization data) are embedded in the binary at compile time for portable execution.
 
-## Creating a Release
+## Publishing to Crates.io
 
-To create a new release with automated binary builds for all platforms:
+Follow the comprehensive guide in [BUILDING.md](BUILDING.md) for the complete publishing workflow.
+
+Quick version:
 
 ```bash
-# Update version in Cargo.toml
-vim Cargo.toml  # Update version field
+# 1. Update version and changelog
+vim Cargo.toml docs/CHANGELOG.md
 
-# Commit the version bump
-git add Cargo.toml
+# 2. Quality checks
+make check && cargo test
+
+# 3. Test local install
+cargo install --path .
+
+# 4. Commit and tag
+git add -A
 git commit -m "Bump version to v0.2.2"
-
-# Create and push a version tag
 git tag v0.2.2
 git push origin master
 git push origin v0.2.2
+
+# 5. Publish to crates.io
+cargo publish
 ```
 
-This triggers the GitHub Actions workflow which will:
-- Build binaries for Linux (x86_64, aarch64) and macOS (x86_64, aarch64)
-- Bundle each binary with the ONNX Runtime library
-- Include the install.sh script in release packages
-- Create a GitHub Release with all artifacts
-- Generate SHA256 checksums for verification
+See [BUILDING.md](BUILDING.md) for detailed pre-publish checklist and troubleshooting.
 
 ## Makefile Commands
 

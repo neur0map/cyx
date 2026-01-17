@@ -1,201 +1,232 @@
-# Building and Distributing CYX
+# Building from Source
 
-This document explains how to build and distribute CYX, including handling of runtime dependencies.
+This document explains how to build cyx from source and publish to crates.io.
 
 ## Overview
 
-CYX uses ONNX Runtime for semantic search capabilities. This library is distributed as a shared library (`.so` on Linux, `.dylib` on macOS, `.dll` on Windows) that must be available at runtime.
+Cyx uses ONNX Runtime for semantic search capabilities. The `ort` crate with `download-binaries` feature automatically handles the ONNX Runtime library during build.
 
-## Runtime Dependency: ONNX Runtime
+## Development Build
 
-The project uses the `ort` crate with the `download-binaries` feature, which automatically downloads pre-built ONNX Runtime binaries during the build process. These binaries are:
+```bash
+# Build in debug mode
+cargo build
 
+# Build in release mode
+cargo build --release
+
+# Run directly
+cargo run -- "test query"
+
+# Or use Makefile shortcuts
+make build      # Build release + create symlink
+make build-dev  # Build debug mode
+```
+
+## Testing
+
+```bash
+# Run all tests
+cargo test
+
+# Run with output
+cargo test -- --nocapture
+
+# Or use Makefile
+make test
+```
+
+## Code Quality
+
+```bash
+# Format code
+cargo fmt
+
+# Run clippy
+cargo clippy
+
+# Or use Makefile for both
+make check
+```
+
+## Local Installation
+
+Install from source to test before publishing:
+
+```bash
+# Install from current directory
+cargo install --path .
+
+# Or use Makefile (installs + handles ONNX library)
+make install
+```
+
+The `ort` crate automatically downloads the ONNX Runtime library during build. The library is placed in:
 - **Linux**: `libonnxruntime.so.1.16.0`
 - **macOS**: `libonnxruntime.1.16.0.dylib`
 - **Windows**: `onnxruntime.dll`
 
-The `build.rs` file sets the runtime library search path (rpath) to look for libraries in the same directory as the binary (`$ORIGIN` on Linux, `@executable_path` on macOS).
+## Publishing to Crates.io
 
-## Building from Source
+### Prerequisites
 
-### Development Build
+1. **Crates.io account**: Sign up at [crates.io](https://crates.io)
+2. **Login**: `cargo login` (one-time setup)
+3. **Clean build**: Ensure all tests pass
 
-For local development:
-
-```bash
-# Build in debug mode (faster compilation)
-make build-dev
-
-# Build in release mode and create system symlink
-make build
-
-# Run directly from source
-cargo run
-```
-
-### Release Build
-
-For creating a distributable release package:
+### Pre-publish Checklist
 
 ```bash
-# Full release build with tests, checks, and packaging
-make release
+# 1. Update version in Cargo.toml
+vim Cargo.toml  # Bump version
 
-# Or just create the package
-make package
-```
+# 2. Update CHANGELOG
+vim docs/CHANGELOG.md
 
-This will create a distributable archive in the `dist/` directory containing:
-- The `cyx` binary
-- The ONNX Runtime shared library
-- Installation instructions
+# 3. Run quality checks
+make check
 
-## Distribution
+# 4. Run all tests
+cargo test
 
-### Automated Releases (GitHub Actions)
-
-Releases are automatically built for multiple platforms when you push a version tag:
-
-```bash
-git tag v0.2.1
-git push origin v0.2.1
-```
-
-The GitHub Actions workflow will:
-1. Build binaries for Linux (x86_64, aarch64) and macOS (x86_64, aarch64)
-2. Bundle each binary with its required ONNX Runtime library
-3. Create release packages (`.tar.gz`)
-4. Generate SHA256 checksums
-5. Upload to GitHub Releases
-
-### Manual Release Package Creation
-
-To manually create a release package:
-
-```bash
-# Build the release binary
-cargo build --release
-
-# Create the package
-bash scripts/package-release.sh
-```
-
-The package will be created in `dist/cyx-v{VERSION}-{PLATFORM}.tar.gz`
-
-## Installation Methods
-
-### For Users - Pre-built Binaries
-
-Users downloading pre-built binaries should extract the archive and follow the included `README.txt`. The library must be kept in the same directory as the binary or installed to a system library directory.
-
-**System-wide installation (Linux/macOS):**
-
-```bash
-tar -xzf cyx-v0.2.0-linux-x86_64.tar.gz
-cd cyx-v0.2.0-linux-x86_64
-sudo cp cyx /usr/local/bin/
-sudo cp libonnxruntime.so.1.16.0 /usr/local/lib/
-sudo ldconfig  # Linux only
-```
-
-**Local installation (Linux/macOS):**
-
-```bash
-tar -xzf cyx-v0.2.0-linux-x86_64.tar.gz
-cd cyx-v0.2.0-linux-x86_64
-mkdir -p ~/.local/bin
-cp cyx ~/.local/bin/
-cp libonnxruntime* ~/.local/bin/
-
-# Add to PATH if not already there
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### For Developers - Building from Source
-
-Developers can use `cargo install`:
-
-```bash
+# 5. Test local install
 cargo install --path .
+cyx "test query"  # Verify it works
+
+# 6. Dry run publish (check for issues)
+cargo publish --dry-run
+
+# 7. Review package contents
+cargo package --list
 ```
 
-**Important**: When using `cargo install`, you need to manually copy the ONNX Runtime library to the same directory as the installed binary:
+### Publish
 
 ```bash
-# Find where cargo installs binaries (usually ~/.cargo/bin)
-INSTALL_DIR=$(dirname $(which cyx))
+# Publish to crates.io
+cargo publish
 
-# Copy the library
-cp target/release/libonnxruntime* $INSTALL_DIR/
+# Tag the release
+git tag v0.2.2
+git push origin v0.2.2
 ```
 
-Or use the Makefile for a simpler installation:
+### Post-Publish
 
-```bash
-make install
-```
+1. Verify on crates.io: https://crates.io/crates/cyx
+2. Test install: `cargo install cyx`
+3. Update README badge if version changed
+4. Announce in changelog/release notes
 
-This will build and install using `cargo install`, then attempt to copy the required library.
+## Version Management
+
+Follow semantic versioning:
+- **Major** (1.0.0): Breaking API changes
+- **Minor** (0.2.0): New features, backward compatible
+- **Patch** (0.2.1): Bug fixes, backward compatible
+
+Update version in:
+- `Cargo.toml` (line 3)
+- `docs/CHANGELOG.md` (add entry)
 
 ## Troubleshooting
 
-### Error: libonnxruntime.so.1.16.0: cannot open shared object file
+### ONNX Library Not Found
 
-This error means the ONNX Runtime library is not in the library search path. Solutions:
-
-1. **Ensure the library is in the same directory as the binary** (recommended for portable installations)
-2. **Install the library system-wide**:
-   ```bash
-   sudo cp libonnxruntime.so.1.16.0 /usr/local/lib/
-   sudo ldconfig
-   ```
-3. **Add the library directory to `LD_LIBRARY_PATH`** (not recommended):
-   ```bash
-   export LD_LIBRARY_PATH=/path/to/library:$LD_LIBRARY_PATH
-   ```
-
-### Verifying Library Dependencies
-
-**Linux:**
-```bash
-ldd ./cyx
-```
-
-**macOS:**
-```bash
-otool -L ./cyx
-```
-
-Both commands should show the ONNX Runtime library with either a relative path or `@rpath`.
-
-## Cross-Compilation
-
-The GitHub Actions workflow demonstrates cross-compilation for different platforms. For manual cross-compilation:
+The `ort` crate's `download-binaries` feature handles this automatically. If you see errors:
 
 ```bash
-# Install target
-rustup target add aarch64-unknown-linux-gnu
-
-# Install cross-compilation toolchain (Linux ARM64 example)
-sudo apt-get install gcc-aarch64-linux-gnu
-
-# Build
-CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
-  cargo build --release --target aarch64-unknown-linux-gnu
+# Clean and rebuild
+cargo clean
+cargo build --release
 ```
 
-Note: Cross-compilation with the `ort` crate requires the appropriate ONNX Runtime binaries for the target platform.
+### Publish Errors
 
-## Static Linking Alternative
+Common issues:
 
-If you want to avoid the shared library dependency entirely, you would need to:
+1. **Version already exists**: Bump version in Cargo.toml
+2. **Missing metadata**: Ensure Cargo.toml has description, license, repository
+3. **Large package**: Check `cargo package --list` for unexpected files
 
-1. Build ONNX Runtime from source with static linking
-2. Use the `ort` crate's build-from-source feature
-3. Configure static linking in `build.rs`
+### Package Size
 
-This is more complex and increases binary size significantly (~60MB+), so the current dynamic linking approach is preferred.
+Current package size: ~50KB (source only, no binaries)
+
+The ONNX Runtime is downloaded during user installation, not included in the crate package.
+
+## Makefile Commands
+
+```bash
+make help        # Show all commands
+make build       # Release build + symlink
+make build-dev   # Debug build
+make install     # Install to system
+make uninstall   # Remove from system
+make test        # Run tests
+make check       # Format + clippy
+make clean       # Clean build artifacts
+make setup       # Run setup wizard
+```
+
+## Development Workflow
+
+```bash
+# 1. Make changes
+vim src/...
+
+# 2. Format and check
+make check
+
+# 3. Test
+make test
+
+# 4. Build and test locally
+make build
+./bin/cyx "test query"
+
+# 5. Commit
+git add -A
+git commit -m "Description"
+git push
+```
+
+## Release Workflow
+
+```bash
+# 1. Update version
+vim Cargo.toml docs/CHANGELOG.md
+
+# 2. Quality checks
+make check && cargo test
+
+# 3. Test local install
+cargo install --path .
+cyx "test query"
+
+# 4. Commit version bump
+git add Cargo.toml docs/CHANGELOG.md
+git commit -m "Bump version to v0.2.2"
+git push
+
+# 5. Publish to crates.io
+cargo publish
+
+# 6. Tag release
+git tag v0.2.2
+git push origin v0.2.2
+```
+
+## Dependencies
+
+Key runtime dependencies managed in `Cargo.toml`:
+- `ort` - ONNX Runtime bindings (downloads library)
+- `reqwest` - HTTP client for API calls
+- `rusqlite` - SQLite for cache (bundled)
+- `clap` - CLI argument parsing
+- `tokio` - Async runtime
+
+All dependencies are automatically handled by cargo.
 
 ## License
 
