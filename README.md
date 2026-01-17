@@ -1,6 +1,6 @@
 # Cyx
 
-Fast, simple command-line security tool powered by AI. Install with cargo, setup in 30 seconds.
+Fast, simple command-line security tool powered by AI. Install with cargo, set up in 30 seconds or less. This tool is solely to give you commands you often forget; it will not provide follow-up solutions to your problems or results.
 
 ## Features
 
