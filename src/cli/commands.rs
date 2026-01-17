@@ -145,7 +145,11 @@ impl CommandHandler {
                         format!("{:?}", config.provider).cyan()
                     );
                     println!();
-                    println!("{}", "For cloud providers (Groq/Perplexity), everything works out of the box.".dimmed());
+                    println!(
+                        "{}",
+                        "For cloud providers (Groq/Perplexity), everything works out of the box."
+                            .dimmed()
+                    );
                     println!();
                     return Ok(());
                 }

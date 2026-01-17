@@ -76,6 +76,9 @@ mod tests {
         let json = serde_json::to_string(&metadata).unwrap();
         let deserialized: UpdateMetadata = serde_json::from_str(&json).unwrap();
 
-        assert_eq!(metadata.last_check.is_some(), deserialized.last_check.is_some());
+        assert_eq!(
+            metadata.last_check.is_some(),
+            deserialized.last_check.is_some()
+        );
     }
 }

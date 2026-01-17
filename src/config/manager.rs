@@ -73,7 +73,10 @@ impl ConfigManager {
         println!("{}", "─".repeat(60).dimmed());
         println!("Get your API key:");
         println!("  • Groq:       {}", "https://console.groq.com/".cyan());
-        println!("  • Perplexity: {}", "https://www.perplexity.ai/settings/api".cyan());
+        println!(
+            "  • Perplexity: {}",
+            "https://www.perplexity.ai/settings/api".cyan()
+        );
         println!();
 
         let provider_idx = Select::with_theme(&ColorfulTheme::default())
@@ -134,7 +137,10 @@ impl ConfigManager {
         println!("\n{}", "Testing configuration...".cyan());
 
         // Test provider connection
-        print!("  {} connection... ", format!("{:?}", config.provider).cyan());
+        print!(
+            "  {} connection... ",
+            format!("{:?}", config.provider).cyan()
+        );
         std::io::Write::flush(&mut std::io::stdout())?;
 
         match Self::test_provider(&config) {
@@ -158,7 +164,10 @@ impl ConfigManager {
         println!("{}", "  ✓ Setup Complete!".green().bold());
         println!("{}", "═".repeat(60).green());
         println!();
-        println!("  Provider: {}", format!("{:?}", config.provider).cyan().bold());
+        println!(
+            "  Provider: {}",
+            format!("{:?}", config.provider).cyan().bold()
+        );
         println!("  Cache:    {} (auto-enabled)", "Smart".green());
         println!();
         println!("{}", "You're ready to go! Try your first query:".bold());
