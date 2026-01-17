@@ -1,4 +1,5 @@
 use super::Config;
+use crate::cache::CacheStorage;
 use anyhow::{Context, Result};
 use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
@@ -159,6 +160,38 @@ impl ConfigManager {
         // Save configuration
         Self::save(&config)?;
 
+        // ═════════════════════════════════════════════
+        // STEP 3: Cache Initialization
+        // ═════════════════════════════════════════════
+        println!("\n{}", "Step 3: Cache Initialization".bold().yellow());
+        println!("{}", "─".repeat(60).dimmed());
+        print!("  Initializing cache database... ");
+        std::io::Write::flush(&mut std::io::stdout())?;
+
+        let cache_dir = Config::cache_dir()?;
+        match CacheStorage::new(&cache_dir) {
+            Ok(_) => {
+                println!("{}", "[✓]".green());
+                println!(
+                    "  Cache directory: {}",
+                    cache_dir.display().to_string().dimmed()
+                );
+            }
+            Err(e) => {
+                println!("{}", "[✗]".red());
+                println!("  {}: {}", "Error".red(), e);
+                println!();
+                println!(
+                    "{}",
+                    "Note: SQLite is bundled with Cyx and should work automatically.".dimmed()
+                );
+                println!(
+                    "If this error persists, check permissions: {}",
+                    cache_dir.display().to_string().cyan()
+                );
+            }
+        }
+
         println!();
         println!("{}", "═".repeat(60).green());
         println!("{}", "  ✓ Setup Complete!".green().bold());
@@ -168,7 +201,7 @@ impl ConfigManager {
             "  Provider: {}",
             format!("{:?}", config.provider).cyan().bold()
         );
-        println!("  Cache:    {} (auto-enabled)", "Smart".green());
+        println!("  Cache:    {} (ready to use)", "Initialized".green());
         println!();
         println!("{}", "You're ready to go! Try your first query:".bold());
         println!();

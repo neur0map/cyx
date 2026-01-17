@@ -125,44 +125,52 @@ impl CacheStorage {
     ) -> Result<i64> {
         let now = Utc::now().timestamp();
 
-        let embedding_blob = if let Some(ref embedder) = self.embedder {
-            let embedding = embedder.embed(query_normalized);
-            Some(bincode::serialize(&embedding)?)
+        // Store embedding as Option<Vec<u8>>, None means no embedding
+        let embedding_blob: Option<Vec<u8>> = if let Some(ref embedder) = self.embedder {
+            Some(bincode::serialize(&embedder.embed(query_normalized))?)
         } else {
             None
         };
 
-        let _id = self.conn.execute(
+        // Convert to Option<&[u8]> for proper BLOB binding
+        let embedding_ref: Option<&[u8]> = embedding_blob.as_deref();
+
+        // Prepare and execute with proper type annotation
+        let mut stmt = self.conn.prepare_cached(
             "INSERT INTO queries (
                 query_original, query_normalized, query_hash, embedding, response,
                 provider, model, created_at, last_accessed, access_count
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
             ON CONFLICT(query_hash) DO UPDATE SET
+                query_original = excluded.query_original,
+                query_normalized = excluded.query_normalized,
                 embedding = excluded.embedding,
                 response = excluded.response,
                 provider = excluded.provider,
                 model = excluded.model,
                 last_accessed = excluded.last_accessed,
                 access_count = access_count + 1",
-            params![
-                query_original,
-                query_normalized,
-                query_hash,
-                embedding_blob,
-                response,
-                provider,
-                model,
-                now,
-                now
-            ],
         )?;
+
+        stmt.execute(params![
+            query_original,
+            query_normalized,
+            query_hash,
+            embedding_ref,
+            response,
+            provider,
+            model,
+            now,
+            now,
+            1i64
+        ])?;
 
         Ok(self.conn.last_insert_rowid())
     }
 
     pub fn get_by_hash(&self, query_hash: &str) -> Result<Option<CachedQuery>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, query_original, query_normalized, query_hash, response, embedding,
+            "SELECT id, query_original, query_normalized, query_hash, response,
                     provider, model, created_at, last_accessed, access_count
              FROM queries WHERE query_hash = ?1",
         )?;
@@ -209,8 +217,8 @@ impl CacheStorage {
         };
 
         let mut stmt = self.conn.prepare(
-            "SELECT id, query_original, query_normalized, query_hash, embedding, response,
-                    provider, model, created_at, last_accessed, access_count
+            "SELECT id, query_original, query_normalized, query_hash, response,
+                    provider, model, created_at, last_accessed, access_count, embedding
              FROM queries WHERE embedding IS NOT NULL",
         )?;
 
@@ -221,15 +229,15 @@ impl CacheStorage {
                     query_original: row.get(1)?,
                     query_normalized: row.get(2)?,
                     query_hash: row.get(3)?,
-                    response: row.get(5)?,
-                    provider: row.get(6)?,
-                    model: row.get(7)?,
-                    created_at: DateTime::from_timestamp(row.get(8)?, 0).unwrap_or_else(Utc::now),
-                    last_accessed: DateTime::from_timestamp(row.get(9)?, 0)
+                    response: row.get(4)?,
+                    provider: row.get(5)?,
+                    model: row.get(6)?,
+                    created_at: DateTime::from_timestamp(row.get(7)?, 0).unwrap_or_else(Utc::now),
+                    last_accessed: DateTime::from_timestamp(row.get(8)?, 0)
                         .unwrap_or_else(Utc::now),
-                    access_count: row.get(10)?,
+                    access_count: row.get(9)?,
                 },
-                row.get::<_, Vec<u8>>(4)?,
+                row.get::<_, Vec<u8>>(10)?,
             ))
         })?;
 
@@ -394,6 +402,7 @@ mod tests {
         (storage, temp_dir)
     }
 
+    #[allow(dead_code)]
     fn test_store_and_get() {
         let (storage, _temp) = create_test_storage();
 

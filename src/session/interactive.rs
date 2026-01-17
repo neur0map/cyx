@@ -326,6 +326,11 @@ impl InteractiveSession {
             println!();
         }
 
+        // Properly finish progress bar before returning
+        if let Some(pb) = pb.as_ref() {
+            pb.finish();
+        }
+
         let response = full_response.lock().unwrap().clone();
         Ok(response)
     }
@@ -500,6 +505,11 @@ impl InteractiveSession {
             if !*box_closed {
                 println!();
                 Display::stream_box_footer();
+            }
+
+            // Properly finish progress bar before returning
+            if let Some(pb) = pb.as_ref() {
+                pb.finish();
             }
 
             println!();
