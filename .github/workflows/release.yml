@@ -104,8 +104,8 @@ jobs:
           fi
 
           # Copy installer script (skip for Windows)
-          if [[ "${{ runner.os }}" != "Windows" ]] && [[ -f "install.sh" ]]; then
-            cp install.sh "${RELEASE_DIR}/"
+          if [[ "${{ runner.os }}" != "Windows" ]] && [[ -f "scripts/install.sh" ]]; then
+            cp scripts/install.sh "${RELEASE_DIR}/"
             chmod +x "${RELEASE_DIR}/install.sh"
           fi
 

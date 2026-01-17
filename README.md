@@ -37,7 +37,7 @@ cyx --learn "linux privilege escalation"
 **One-line installer** for Linux/macOS:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/scripts/install.sh | bash
 ```
 
 This will:
@@ -49,7 +49,7 @@ This will:
 
 **Custom installation directory:**
 ```bash
-INSTALL_DIR=/usr/local/bin curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/install.sh | bash
+INSTALL_DIR=/usr/local/bin curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/scripts/install.sh | bash
 ```
 
 ### Manual Installation
