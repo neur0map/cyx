@@ -42,3 +42,8 @@ models/
 dist/
 *.tar.gz
 *.zip
+
+
+/openspec
+AGENTS.md
+CLAUDE.md

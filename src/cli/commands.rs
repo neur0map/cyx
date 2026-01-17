@@ -37,6 +37,9 @@ impl CommandHandler {
             Some(Commands::DownloadModel { size }) => {
                 Self::download_model(&size)?;
             }
+            Some(Commands::Update { check_only }) => {
+                Self::update(check_only)?;
+            }
             None => {
                 // No subcommand specified - require query
                 if let Some(query_text) = query {
@@ -131,6 +134,24 @@ impl CommandHandler {
         println!("{}", "System Status Check".bold().cyan());
         println!("{}", "─".repeat(60));
         println!();
+
+        // Check if using cloud providers (Groq/Perplexity)
+        if let Ok(config) = ConfigManager::load() {
+            match config.provider {
+                crate::config::LLMProvider::Groq | crate::config::LLMProvider::Perplexity => {
+                    println!(
+                        "{} Using {} - no system dependencies required!",
+                        "[✓]".green(),
+                        format!("{:?}", config.provider).cyan()
+                    );
+                    println!();
+                    println!("{}", "For cloud providers (Groq/Perplexity), everything works out of the box.".dimmed());
+                    println!();
+                    return Ok(());
+                }
+                _ => {}
+            }
+        }
 
         let checker = DependencyChecker::new()?;
         let results = checker.check_all()?;
@@ -404,6 +425,21 @@ impl CommandHandler {
         }
 
         Ok(config)
+    }
+
+    fn update(check_only: bool) -> Result<()> {
+        use crate::update::UpdateManager;
+
+        let manager = UpdateManager::new()?;
+        manager.check_and_display()?;
+
+        // Note: Both update and update --check-only do the same thing now
+        // (just display update availability and cargo install command)
+        if !check_only {
+            // Kept for backward compatibility, but functionally identical
+        }
+
+        Ok(())
     }
 }
 

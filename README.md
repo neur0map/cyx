@@ -1,28 +1,52 @@
 # Cyx
 
-LLM-powered terminal tool for security command lookup. Supports Perplexity, Groq, and Ollama.
+Fast, simple command-line security tool powered by AI. Install with cargo, setup in 30 seconds.
 
 ## Features
 
-- Command-first output with code blocks
-- Learn mode for detailed explanations
-- Smart cache with ONNX semantic search
-- Local LLM support via Ollama
-- Source attribution and links
+- **Simple Setup**: `cargo install cyx` + 30-second wizard
+- **Command-First**: Code blocks with explanations
+- **Learn Mode**: Detailed breakdowns for education
+- **Smart Cache**: ONNX semantic search reduces API calls
+- **Cloud & Local**: Groq (recommended), Perplexity, or Ollama
+- **Source Attribution**: Links to documentation
+
+## Installation
+
+```bash
+cargo install cyx
+cyx setup
+```
+
+That's it! The setup wizard will:
+1. Ask which provider you want (Groq or Perplexity)
+2. Prompt for your API key
+3. Test the connection
+4. You're ready to go!
+
+### Getting API Keys
+
+- **Groq** (Recommended): Fast, generous free tier - [Get API key](https://console.groq.com/)
+- **Perplexity**: Web search enabled - [Get API key](https://www.perplexity.ai/settings/api)
+
+### Requirements
+
+- Rust toolchain (for installation)
+- API key from Groq or Perplexity
 
 ## Quick Start
 
 ```bash
-# Install with one command
-curl -sSL https://raw.githubusercontent.com/neur0map/cyx/master/scripts/install.sh | bash
+# Install
+cargo install cyx
 
-# First time setup
+# Setup (30 seconds)
 cyx setup
 
-# Use
-cyx "nmap stealth scan"
-cyx "sql injection bypass waf"
-cyx --learn "linux privilege escalation"
+# Your first query
+cyx "how to list files with hidden files in linux"
+
+# That's it!
 ```
 
 ## Documentation

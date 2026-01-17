@@ -42,13 +42,13 @@ pub enum Commands {
         action: ConfigAction,
     },
 
-    /// Run initial setup wizard
+    /// Initial setup wizard (Groq/Perplexity API key)
     Setup,
 
     /// Check system dependencies and health
     Doctor,
 
-    /// Manage Ollama models
+    /// Manage Ollama models (Advanced - requires Ollama installed)
     Ollama {
         #[command(subcommand)]
         action: OllamaAction,
@@ -65,6 +65,13 @@ pub enum Commands {
         /// Model size (small, medium, large)
         #[arg(default_value = "small")]
         size: String,
+    },
+
+    /// Check for updates (cargo install cyx --force to update)
+    Update {
+        /// Check for updates without installing
+        #[arg(long)]
+        check_only: bool,
     },
 }
 

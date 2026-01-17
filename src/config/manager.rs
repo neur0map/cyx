@@ -50,107 +50,32 @@ impl ConfigManager {
 
     /// Interactive setup wizard for first-time configuration
     pub fn interactive_setup() -> Result<Config> {
-        use crate::deps::{DependencyChecker, DependencyStatus};
-
         println!("{}", "Cyx Configuration Setup".bold().cyan());
-        println!("Let's get you set up with dependencies and preferences.\n");
+        println!("Fast and simple - let's get you started!\n");
 
         let mut config = Config::default();
 
-        // Check Ollama availability
-        println!("{}", "Step 1: Checking dependencies...".bold().yellow());
-        println!("{}", "─".repeat(60));
-
-        let checker = DependencyChecker::new()?;
-        let results = checker.check_all()?;
-
-        for result in &results {
-            match result.status {
-                DependencyStatus::Installed { ref version } => {
-                    println!(
-                        "  {} {} {}",
-                        "[✓]".green().bold(),
-                        result.name.bold(),
-                        format!("({})", version).dimmed()
-                    );
-                }
-                DependencyStatus::NotInstalled => {
-                    println!(
-                        "  {} {} {}",
-                        "[✗]".red().bold(),
-                        result.name,
-                        "(not installed)".dimmed()
-                    );
-                }
-                _ => {}
-            }
-        }
-        println!();
-
-        let ollama_available = results
-            .iter()
-            .any(|r| r.name == "Ollama" && matches!(r.status, DependencyStatus::Installed { .. }));
-
-        // ═══════════════════════════════════════════════
-        // STEP 2: Install Missing Dependencies
-        // ═══════════════════════════════════════════════
-        if !ollama_available {
-            println!("{}", "Step 2: Install Ollama (Optional)".bold().yellow());
-            println!("{}", "─".repeat(60).dimmed());
-            println!("Ollama enables local LLM inference with zero API costs.");
-            println!("Models run on your machine (requires 4-8GB RAM).\n");
-
-            let install_choices = vec![
-                "Yes, install Ollama now (recommended)",
-                "No, use cloud providers only (Groq/Perplexity)",
-                "I'll install Ollama manually later",
-            ];
-
-            let install_choice = Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Install Ollama?")
-                .items(&install_choices)
-                .default(0)
-                .interact()?;
-
-            if install_choice == 0 {
-                println!("\n{}", "Installing Ollama...".cyan());
-                if let Err(e) = crate::deps::OllamaInstaller::install() {
-                    println!("{} Failed to install Ollama: {}", "[!]".yellow(), e);
-                    println!(
-                        "You can install manually from: {}\n",
-                        "https://ollama.com".cyan()
-                    );
-                } else {
-                    println!("{} Ollama installed successfully!", "[✓]".green());
-
-                    // Start Ollama service
-                    println!("{}", "Starting Ollama service...".cyan());
-                    if let Err(e) = crate::deps::OllamaInstaller::start_service() {
-                        println!("{} Could not start service: {}", "[!]".yellow(), e);
-                    } else {
-                        println!("{} Ollama is running\n", "[✓]".green());
-                    }
-                }
-            }
-            println!();
-        }
-
-        // Re-check Ollama availability after potential installation
+        // Check if Ollama is available (optional)
         let ollama_available = crate::deps::OllamaInstaller::check_available();
 
-        // Build provider list based on availability
+        // Build provider list - Groq and Perplexity first (cloud providers)
         let mut providers = vec![];
-        if ollama_available {
-            providers.push("Ollama - Local models (free, private, offline) [RECOMMENDED]");
-        }
-        providers.push("Groq - Cloud API (fast, free tier available)");
+        providers.push("Groq - Cloud API (fast, generous free tier) [RECOMMENDED]");
         providers.push("Perplexity - Cloud API (web search enabled)");
+        if ollama_available {
+            providers.push("Ollama - Local models (advanced, requires manual setup)");
+        }
 
         // ═══════════════════════════════════════════════
-        // STEP 3: Provider Selection
+        // STEP 1: Provider Selection
         // ═══════════════════════════════════════════════
-        println!("{}", "Step 3: LLM Provider Selection".bold().yellow());
+        println!("{}", "Step 1: LLM Provider Selection".bold().yellow());
         println!("{}", "─".repeat(60).dimmed());
+        println!("Get your API key:");
+        println!("  • Groq:       {}", "https://console.groq.com/".cyan());
+        println!("  • Perplexity: {}", "https://www.perplexity.ai/settings/api".cyan());
+        println!();
+
         let provider_idx = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select your preferred LLM provider")
             .items(&providers)
@@ -160,86 +85,28 @@ impl ConfigManager {
         let selected_provider = providers[provider_idx];
 
         // ═══════════════════════════════════════════════
-        // STEP 4: Provider Configuration
+        // STEP 2: Provider Configuration
         // ═══════════════════════════════════════════════
         if selected_provider.starts_with("Ollama") {
             config.provider = super::LLMProvider::Ollama;
 
-            println!("\n{}", "Step 4: Ollama Model Selection".bold().yellow());
+            println!("\n{}", "Step 2: Ollama Configuration".bold().yellow());
             println!("{}", "─".repeat(60).dimmed());
+            println!("Note: You must have Ollama installed and models downloaded.");
+            println!("Install from: {}", "https://ollama.com".cyan());
+            println!("Download models with: {}\n", "ollama pull mistral".cyan());
 
-            // Check for installed models
-            if let Ok(ollama_provider) =
-                crate::llm::OllamaProvider::new(super::OllamaConfig::default())
-            {
-                let models = ollama_provider.list_models().unwrap_or_default();
+            let model: String = Input::with_theme(&ColorfulTheme::default())
+                .with_prompt("Enter Ollama model name (e.g., mistral:7b-instruct)")
+                .default("mistral:7b-instruct".to_string())
+                .interact_text()?;
 
-                if models.is_empty() {
-                    println!("No models installed yet. Let's download one!\n");
-
-                    let model_profiles = vec![
-                        "fast - llama3.2:3b (2 GB, quick responses)",
-                        "balanced - mistral:7b-instruct (4.1 GB, best quality/speed) [RECOMMENDED]",
-                        "quality - mixtral:8x7b (26 GB, highest quality)",
-                        "code - codellama:7b-instruct (3.8 GB, code-focused)",
-                    ];
-
-                    let model_idx = Select::with_theme(&ColorfulTheme::default())
-                        .with_prompt("Select model profile")
-                        .items(&model_profiles)
-                        .default(1)
-                        .interact()?;
-
-                    let model_name = match model_idx {
-                        0 => "llama3.2:3b",
-                        1 => "mistral:7b-instruct",
-                        2 => "mixtral:8x7b",
-                        3 => "codellama:7b-instruct",
-                        _ => "mistral:7b-instruct",
-                    };
-
-                    println!("\n{} Downloading {}...", "[~]".cyan(), model_name);
-                    println!("This may take a few minutes depending on your connection.\n");
-
-                    if let Err(e) = crate::llm::OllamaProvider::pull_model(
-                        model_name,
-                        &super::OllamaConfig::default().base_url,
-                    ) {
-                        println!("{} Failed to download model: {}", "[!]".red(), e);
-                        println!(
-                            "You can try manually: {}",
-                            format!("ollama pull {}", model_name).cyan()
-                        );
-                    } else {
-                        println!("{} Model downloaded successfully!\n", "[✓]".green());
-                    }
-                    config.ollama.model = model_name.to_string();
-                } else {
-                    println!("{}", "Installed Ollama models:".bold());
-                    for model in &models {
-                        println!("  • {}", model.cyan());
-                    }
-                    println!();
-
-                    let model_idx = Select::with_theme(&ColorfulTheme::default())
-                        .with_prompt("Select model to use")
-                        .items(&models)
-                        .default(0)
-                        .interact()?;
-
-                    config.ollama.model = models[model_idx].clone();
-                }
-            }
+            config.ollama.model = model;
         } else if selected_provider.starts_with("Groq") {
             config.provider = super::LLMProvider::Groq;
 
-            println!("\n{}", "Step 4: API Key Configuration".bold().yellow());
+            println!("\n{}", "Step 2: Groq API Key".bold().yellow());
             println!("{}", "─".repeat(60).dimmed());
-            println!(
-                "{}",
-                "Tip: You can add more providers later with 'cyx config set'".dimmed()
-            );
-            println!();
 
             let api_key: String = Input::with_theme(&ColorfulTheme::default())
                 .with_prompt("Enter your Groq API key")
@@ -248,13 +115,8 @@ impl ConfigManager {
         } else {
             config.provider = super::LLMProvider::Perplexity;
 
-            println!("\n{}", "Step 4: API Key Configuration".bold().yellow());
+            println!("\n{}", "Step 2: Perplexity API Key".bold().yellow());
             println!("{}", "─".repeat(60).dimmed());
-            println!(
-                "{}",
-                "Tip: You can add more providers later with 'cyx config set'".dimmed()
-            );
-            println!();
 
             let api_key: String = Input::with_theme(&ColorfulTheme::default())
                 .with_prompt("Enter your Perplexity API key")
@@ -262,98 +124,29 @@ impl ConfigManager {
             config.api_keys.perplexity = Some(api_key);
         }
 
-        // ═══════════════════════════════════════════════
-        // STEP 5: Cache Configuration
-        // ═══════════════════════════════════════════════
-        println!("\n{}", "Step 5: Smart Cache Configuration".bold().yellow());
-        println!("{}", "─".repeat(60).dimmed());
-        println!("Smart caching reduces API costs and improves response time.\n");
-
-        let enable_cache = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enable smart caching?")
-            .default(true)
-            .interact()?;
-
-        config.cache.enabled = enable_cache;
-
-        if enable_cache {
-            println!();
-            let model_sizes = vec![
-                "small - all-MiniLM-L6-v2 (86 MB, 384D, good balance) [RECOMMENDED]",
-                "medium - bge-base-en-v1.5 (400 MB, 768D, better accuracy)",
-                "large - e5-large-v2 (1.3 GB, 1024D, best accuracy)",
-            ];
-
-            let size_idx = Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Select embedding model for semantic search")
-                .items(&model_sizes)
-                .default(0)
-                .interact()?;
-
-            let model_size = match size_idx {
-                0 => "small",
-                1 => "medium",
-                2 => "large",
-                _ => "small",
-            };
-
-            config.cache.embedding_model = model_size.to_string();
-
-            println!(
-                "\n{} Embedding model configured: {}",
-                "[~]".cyan(),
-                model_size
-            );
-            println!("Model will be downloaded automatically on first use.");
-            println!(
-                "Or download now with: {}\n",
-                format!("cyx download-model {}", model_size).cyan()
-            );
-        }
+        // Auto-enable cache with default settings (no prompts)
+        config.cache.enabled = true;
+        config.cache.embedding_model = "small".to_string();
 
         // ═══════════════════════════════════════════════
-        // STEP 6: Validation & Summary
+        // Validation & Summary
         // ═══════════════════════════════════════════════
-        println!("\n{}", "Step 6: Validation".bold().yellow());
-        println!("{}", "─".repeat(60).dimmed());
-        println!("Testing configuration...\n");
+        println!("\n{}", "Testing configuration...".cyan());
 
         // Test provider connection
-        print!(
-            "  Testing {} connection... ",
-            format!("{:?}", config.provider).cyan()
-        );
+        print!("  {} connection... ", format!("{:?}", config.provider).cyan());
         std::io::Write::flush(&mut std::io::stdout())?;
 
         match Self::test_provider(&config) {
             Ok(_) => println!("{}", "[✓]".green()),
             Err(e) => {
                 println!("{}", "[✗]".red());
-                println!("  {}: {}\n", "Error".red(), e);
+                println!("  {}: {}", "Error".red(), e);
                 println!(
-                    "{}",
-                    "Warning: Provider connection failed. Please check your configuration."
-                        .yellow()
-                );
-                println!(
-                    "You can test it later with: {}\n",
+                    "\n{} Connection test failed. Check your configuration and try: {}\n",
+                    "[!]".yellow(),
                     "cyx \"test query\"".cyan()
                 );
-            }
-        }
-
-        // Initialize cache if enabled
-        if config.cache.enabled {
-            print!("  Initializing cache... ");
-            std::io::Write::flush(&mut std::io::stdout())?;
-
-            let cache_dir = Config::cache_dir()?;
-            match crate::cache::storage::CacheStorage::new(&cache_dir) {
-                Ok(_) => println!("{}", "[✓]".green()),
-                Err(e) => {
-                    println!("{}", "[✗]".red());
-                    println!("  {}: {}\n", "Error".red(), e);
-                }
             }
         }
 
@@ -362,45 +155,15 @@ impl ConfigManager {
 
         println!();
         println!("{}", "═".repeat(60).green());
-        println!("{}", "  ✓ Configuration Complete!".green().bold());
+        println!("{}", "  ✓ Setup Complete!".green().bold());
         println!("{}", "═".repeat(60).green());
         println!();
-        println!(
-            "{}",
-            format!("  Provider:  {}", format!("{:?}", config.provider).cyan()).bold()
-        );
-        if config.cache.enabled {
-            println!(
-                "{}",
-                format!(
-                    "  Cache:     Enabled ({} model)",
-                    config.cache.embedding_model
-                )
-                .bold()
-            );
-        } else {
-            println!("{}", "  Cache:     Disabled".dimmed());
-        }
+        println!("  Provider: {}", format!("{:?}", config.provider).cyan().bold());
+        println!("  Cache:    {} (auto-enabled)", "Smart".green());
         println!();
-        println!(
-            "Config saved to: {}",
-            Config::config_path()?.display().to_string().cyan()
-        );
+        println!("{}", "You're ready to go! Try your first query:".bold());
         println!();
-        println!("{}", "You're ready to use Cyx!".bold());
-        println!();
-        println!("{}", "Try it out:".bold());
-        println!("  {} {}", "cyx".green(), "\"nmap stealth scan\"".dimmed());
-        println!(
-            "  {} {}",
-            "cyx cache stats".green(),
-            "(view cache performance)".dimmed()
-        );
-        println!(
-            "  {} {}",
-            "cyx doctor".green(),
-            "(check system health)".dimmed()
-        );
+        println!("  {}", "cyx \"nmap stealth scan\"".green());
         println!();
 
         Ok(config)
