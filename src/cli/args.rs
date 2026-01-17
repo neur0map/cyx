@@ -60,13 +60,6 @@ pub enum Commands {
         action: CacheAction,
     },
 
-    /// Download ONNX embedding model
-    DownloadModel {
-        /// Model size (small, medium, large)
-        #[arg(default_value = "small")]
-        size: String,
-    },
-
     /// Check for updates (cargo install cyx --force to update)
     Update {
         /// Check for updates without installing

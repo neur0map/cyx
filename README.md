@@ -4,12 +4,12 @@ Fast, simple command-line security tool powered by AI. Install with cargo, setup
 
 ## Features
 
-- **Simple Setup**: `cargo install cyx` + 30-second wizard
-- **Command-First**: Code blocks with explanations
-- **Learn Mode**: Detailed breakdowns for education
-- **Smart Cache**: ONNX semantic search reduces API calls
-- **Cloud & Local**: Groq (recommended), Perplexity, or Ollama
-- **Source Attribution**: Links to documentation
+- Simple Setup: `cargo install cyx` + 30-second wizard
+- Command-First: Code blocks with explanations
+- Learn Mode: Detailed breakdowns for education
+- Smart Cache: Vector similarity search reduces API calls
+- Cloud & Local: Groq (recommended), Perplexity, or Ollama
+- Source Attribution: Links to documentation
 
 ## Installation
 
@@ -21,13 +21,13 @@ cyx setup
 That's it! The setup wizard will:
 1. Ask which provider you want (Groq or Perplexity)
 2. Prompt for your API key
-3. Test the connection
+3. Test connection
 4. You're ready to go!
 
 ### Getting API Keys
 
-- **Groq** (Recommended): Fast, generous free tier - [Get API key](https://console.groq.com/)
-- **Perplexity**: Web search enabled - [Get API key](https://www.perplexity.ai/settings/api)
+- Groq (Recommended): Fast, generous free tier - [Get API key](https://console.groq.com/)
+- Perplexity: Web search enabled - [Get API key](https://www.perplexity.ai/settings/api)
 
 ### Requirements
 
@@ -51,12 +51,12 @@ cyx "how to list files with hidden files in linux"
 
 ## Documentation
 
-- **[Installation Guide](docs/INSTALLATION.md)** - Detailed installation, troubleshooting, and setup
-- **[Usage Guide](docs/USAGE.md)** - Examples, options, and advanced features
-- **[Building from Source](docs/BUILDING.md)** - Build instructions and distribution
-- **[Development Guide](docs/DEVELOPMENT.md)** - Contributing, testing, and releases
-- **[Changelog](docs/CHANGELOG.md)** - Version history and release notes
-- **[Data Normalization](docs/DATA_NORMALIZATION.md)** - Technical deep-dive into normalization data
+- [Installation Guide](docs/INSTALLATION.md) - Detailed installation, troubleshooting, and setup
+- [Usage Guide](docs/USAGE.md) - Examples, options, and advanced features
+- [Building from Source](docs/BUILDING.md) - Build instructions and distribution
+- [Development Guide](docs/DEVELOPMENT.md) - Contributing, testing, and releases
+- [Changelog](docs/CHANGELOG.md) - Version history and release notes
+- [Data Normalization](docs/DATA_NORMALIZATION.md) - Technical deep-dive into normalization data
 
 ## Usage
 
@@ -78,7 +78,7 @@ cyx -l "nmap service detection"
 -l, --learn          Educational mode with detailed breakdowns
 -q, --quiet          Minimal output (response only, no formatting)
 -v, --verbose        Detailed progress information
-    --no-tty         Disable TTY features for scripting
+    --no-tty         Disable TTY features for scripting/testing
 ```
 
 ### Configuration
@@ -96,17 +96,15 @@ Config file: `~/.config/cyx/config.toml`
 ### Normal Mode
 
 ```
-╭─── RESPONSE ──────────────────────────────────────────────
-│ ```bash
-│ nmap -sS <target>
-│ ```
-│ TCP SYN stealth scan - doesn't complete handshake. Requires root.
-╰──────────────────────────────────────────────────────────
-
-[*] SOURCES
-───────────────────────────────────────
-Provider: Perplexity (sonar-pro)
-Search: Yes (performed web search)
+[ RESPONSE ]
+  ```bash
+  nmap -sS <target>
+  ```
+  TCP SYN stealth scan - doesn't complete handshake. Requires root.
+--------------
+[ SOURCES ]
+ Provider: Perplexity (sonar-pro)
+ Search: Yes (performed web search)
 
 Links:
   - nmap documentation: https://nmap.org/book/synscan.html
@@ -143,15 +141,13 @@ Normal mode prioritizes executable commands with brief explanations. Learn mode 
 
 ## Troubleshooting
 
-If you encounter library errors, run:
+If you encounter issues, run:
 
 ```bash
-cyx setup
+cyx doctor
 ```
 
-The setup wizard will automatically detect and fix ONNX Runtime library issues.
-
-For detailed troubleshooting, see the [Installation Guide](docs/INSTALLATION.md).
+For detailed troubleshooting, see [Installation Guide](docs/INSTALLATION.md).
 
 ## Disclaimer
 

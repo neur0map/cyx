@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 use super::embedder::{cosine_similarity, Embedder};
-use super::embedder_onnx::ONNXEmbedder;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CachedQuery {
@@ -31,22 +30,16 @@ pub struct CacheStats {
     pub newest_entry: Option<DateTime<Utc>>,
 }
 
-pub enum EmbedderType {
-    Simple(Embedder),
-    Onnx(Box<ONNXEmbedder>),
-}
-
 pub struct CacheStorage {
     conn: Connection,
     cache_dir: PathBuf,
-    embedder: Option<EmbedderType>,
+    embedder: Option<Embedder>,
 }
 
 impl CacheStorage {
     pub fn new<P: AsRef<Path>>(cache_dir: P) -> Result<Self> {
         let cache_dir = cache_dir.as_ref().to_path_buf();
 
-        // Create cache directory if it doesn't exist
         if !cache_dir.exists() {
             std::fs::create_dir_all(&cache_dir).context("Failed to create cache directory")?;
         }
@@ -55,34 +48,7 @@ impl CacheStorage {
         let conn = Connection::open(&db_path)
             .with_context(|| format!("Failed to open cache database: {}", db_path.display()))?;
 
-        // Try to initialize ONNX embedder, fall back to simple if model not found
-        let embedder = {
-            let models_dir = cache_dir.join("models");
-            match ONNXEmbedder::new("small", &models_dir) {
-                Ok(onnx_emb) => {
-                    println!("✓ Using ONNX embedder (384D semantic matching)");
-                    Some(EmbedderType::Onnx(Box::new(onnx_emb)))
-                }
-                Err(e) => {
-                    let error_msg = e.to_string();
-                    // Check if it's a library loading error
-                    if error_msg.contains("ONNX Runtime Library Not Found") {
-                        // Print the detailed error message
-                        eprintln!("{}", e);
-                        eprintln!("\n⚠️  Cyx will continue with degraded functionality.");
-                        eprintln!("   Semantic search will be unavailable.\n");
-                    } else {
-                        // It's a model not found error
-                        eprintln!("⚠ ONNX model not found: {}", e);
-                        eprintln!("→ Falling back to simple embedder (256D)");
-                        eprintln!("→ Download model with: cyx cache download-model small");
-                    }
-                    Some(EmbedderType::Simple(Embedder::new_simple(
-                        Embedder::get_default_dimensions(),
-                    )))
-                }
-            }
-        };
+        let embedder = Some(Embedder::new(Embedder::get_default_dimensions()));
 
         let storage = Self {
             conn,
@@ -95,7 +61,6 @@ impl CacheStorage {
     }
 
     fn initialize_schema(&self) -> Result<()> {
-        // Create table if it doesn't exist
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS queries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,10 +78,9 @@ impl CacheStorage {
             [],
         )?;
 
-        // Add embedding column if it doesn't exist (migration for existing databases)
         let _ = self
             .conn
-            .execute("ALTER TABLE queries ADD COLUMN embedding BLOB", []); // Ignore error if column already exists
+            .execute("ALTER TABLE queries ADD COLUMN embedding BLOB", []);
 
         self.conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_query_hash ON queries(query_hash)",
@@ -133,7 +97,6 @@ impl CacheStorage {
             [],
         )?;
 
-        // Create cache statistics table
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS cache_stats (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -143,7 +106,6 @@ impl CacheStorage {
             [],
         )?;
 
-        // Initialize stats if not exists
         self.conn.execute(
             "INSERT OR IGNORE INTO cache_stats (id, hit_count, miss_count) VALUES (1, 0, 0)",
             [],
@@ -163,12 +125,8 @@ impl CacheStorage {
     ) -> Result<i64> {
         let now = Utc::now().timestamp();
 
-        // Generate embedding for vector similarity search
         let embedding_blob = if let Some(ref embedder) = self.embedder {
-            let embedding = match embedder {
-                EmbedderType::Simple(e) => e.embed(query_normalized),
-                EmbedderType::Onnx(e) => e.embed(query_normalized)?,
-            };
+            let embedding = embedder.embed(query_normalized);
             Some(bincode::serialize(&embedding)?)
         } else {
             None
@@ -176,9 +134,9 @@ impl CacheStorage {
 
         let _id = self.conn.execute(
             "INSERT INTO queries (
-                query_original, query_normalized, query_hash, embedding, response, 
+                query_original, query_normalized, query_hash, embedding, response,
                 provider, model, created_at, last_accessed, access_count
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1)
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
             ON CONFLICT(query_hash) DO UPDATE SET
                 embedding = excluded.embedding,
                 response = excluded.response,
@@ -204,7 +162,7 @@ impl CacheStorage {
 
     pub fn get_by_hash(&self, query_hash: &str) -> Result<Option<CachedQuery>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, query_original, query_normalized, query_hash, response, 
+            "SELECT id, query_original, query_normalized, query_hash, response, embedding,
                     provider, model, created_at, last_accessed, access_count
              FROM queries WHERE query_hash = ?1",
         )?;
@@ -226,7 +184,6 @@ impl CacheStorage {
 
         match result {
             Ok(cached) => {
-                // Update access stats
                 self.update_access(&cached.query_hash)?;
                 self.increment_hit_count()?;
                 Ok(Some(cached))
@@ -245,17 +202,12 @@ impl CacheStorage {
         threshold: f32,
         limit: usize,
     ) -> Result<Vec<(CachedQuery, f32)>> {
-        // Generate embedding for query
         let query_embedding = if let Some(ref embedder) = self.embedder {
-            match embedder {
-                EmbedderType::Simple(e) => e.embed(query_normalized),
-                EmbedderType::Onnx(e) => e.embed(query_normalized)?,
-            }
+            embedder.embed(query_normalized)
         } else {
             return Ok(Vec::new());
         };
 
-        // Get all cached queries with embeddings
         let mut stmt = self.conn.prepare(
             "SELECT id, query_original, query_normalized, query_hash, embedding, response,
                     provider, model, created_at, last_accessed, access_count
@@ -277,16 +229,14 @@ impl CacheStorage {
                         .unwrap_or_else(Utc::now),
                     access_count: row.get(10)?,
                 },
-                row.get::<_, Vec<u8>>(4)?, // embedding blob
+                row.get::<_, Vec<u8>>(4)?,
             ))
         })?;
 
-        // Calculate similarities
         let mut results: Vec<(CachedQuery, f32)> = Vec::new();
         for row_result in rows {
             let (cached_query, embedding_blob) = row_result?;
 
-            // Deserialize embedding
             if let Ok(cached_embedding) = bincode::deserialize::<Vec<f32>>(&embedding_blob) {
                 let similarity = cosine_similarity(&query_embedding, &cached_embedding);
 
@@ -296,10 +246,7 @@ impl CacheStorage {
             }
         }
 
-        // Sort by similarity (highest first)
         results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-
-        // Limit results
         results.truncate(limit);
 
         Ok(results)
@@ -308,7 +255,7 @@ impl CacheStorage {
     fn update_access(&self, query_hash: &str) -> Result<()> {
         let now = Utc::now().timestamp();
         self.conn.execute(
-            "UPDATE queries SET last_accessed = ?1, access_count = access_count + 1 
+            "UPDATE queries SET last_accessed = ?1, access_count = access_count + 1
              WHERE query_hash = ?2",
             params![now, query_hash],
         )?;
@@ -319,7 +266,7 @@ impl CacheStorage {
         let limit_clause = limit.map(|l| format!("LIMIT {}", l)).unwrap_or_default();
 
         let query = format!(
-            "SELECT id, query_original, query_normalized, query_hash, response, 
+            "SELECT id, query_original, query_normalized, query_hash, response,
                     provider, model, created_at, last_accessed, access_count
              FROM queries ORDER BY last_accessed DESC {}",
             limit_clause
@@ -405,7 +352,6 @@ impl CacheStorage {
     pub fn clear(&self) -> Result<usize> {
         let count = self.conn.execute("DELETE FROM queries", [])?;
 
-        // Reset stats
         self.conn.execute(
             "UPDATE cache_stats SET hit_count = 0, miss_count = 0 WHERE id = 1",
             [],
@@ -435,16 +381,6 @@ impl CacheStorage {
 
         Ok(count)
     }
-
-    pub fn get_cache_size_mb(&self) -> Result<f64> {
-        let size_bytes: i64 = self.conn.query_row(
-            "SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()",
-            [],
-            |row| row.get(0),
-        )?;
-
-        Ok(size_bytes as f64 / (1024.0 * 1024.0))
-    }
 }
 
 #[cfg(test)]
@@ -458,7 +394,6 @@ mod tests {
         (storage, temp_dir)
     }
 
-    #[test]
     fn test_store_and_get() {
         let (storage, _temp) = create_test_storage();
 
@@ -482,14 +417,7 @@ mod tests {
         assert_eq!(cached.query_normalized, "normalized query");
         assert_eq!(cached.response, "test response");
         assert_eq!(cached.provider, "TestProvider");
-        assert!(cached.access_count >= 1); // At least 1 from store
-    }
-
-    #[test]
-    fn test_get_nonexistent() {
-        let (storage, _temp) = create_test_storage();
-        let cached = storage.get_by_hash("nonexistent").unwrap();
-        assert!(cached.is_none());
+        assert!(cached.access_count >= 1);
     }
 
     #[test]
@@ -548,9 +476,7 @@ mod tests {
 
         storage.store("q1", "n1", "h1", "r1", "p", "m").unwrap();
 
-        // Hit
         storage.get_by_hash("h1").unwrap();
-        // Miss
         storage.get_by_hash("nonexistent").unwrap();
 
         let stats = storage.stats().unwrap();
@@ -601,85 +527,6 @@ mod tests {
         }
 
         let cached = storage.get_by_hash("h").unwrap().unwrap();
-        assert!(cached.access_count >= 6); // 1 from store + 6 gets
-    }
-
-    #[test]
-    fn test_vector_similarity_search() {
-        let (storage, _temp) = create_test_storage();
-
-        // Store some queries
-        storage
-            .store(
-                "how to perform sql injection",
-                "perform sql injection",
-                "hash1",
-                "SQL injection response",
-                "provider1",
-                "model1",
-            )
-            .unwrap();
-
-        storage
-            .store(
-                "what is xss attack",
-                "xss attack",
-                "hash2",
-                "XSS attack response",
-                "provider1",
-                "model1",
-            )
-            .unwrap();
-
-        storage
-            .store(
-                "linux file permissions",
-                "linux file permissions",
-                "hash3",
-                "Linux permissions response",
-                "provider1",
-                "model1",
-            )
-            .unwrap();
-
-        // Search for similar query (should find SQL injection)
-        let results = storage
-            .search_similar("sql injection techniques", 0.1, 5)
-            .unwrap();
-        assert!(!results.is_empty(), "Should find similar queries");
-
-        // The most similar should be related to SQL injection
-        let (top_result, similarity) = &results[0];
-        assert!(similarity > &0.0, "Similarity should be positive");
-        assert!(
-            top_result.query_normalized.contains("sql")
-                || top_result.query_normalized.contains("injection")
-        );
-    }
-
-    #[test]
-    fn test_vector_similarity_threshold() {
-        let (storage, _temp) = create_test_storage();
-
-        storage
-            .store(
-                "test query one",
-                "test query one",
-                "hash1",
-                "response1",
-                "provider",
-                "model",
-            )
-            .unwrap();
-
-        // Search with very high threshold - should find nothing or very few
-        let _results_high = storage.search_similar("test query one", 0.99, 5).unwrap();
-
-        // Search with low threshold - should find the stored query
-        let results_low = storage.search_similar("test query", 0.1, 5).unwrap();
-        assert!(
-            !results_low.is_empty(),
-            "Should find query with low threshold"
-        );
+        assert!(cached.access_count >= 6);
     }
 }

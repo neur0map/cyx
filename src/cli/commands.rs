@@ -3,7 +3,7 @@ use super::context::CliContext;
 use crate::{
     cache::CacheStorage,
     config::{Config, ConfigManager},
-    deps::{DependencyChecker, DependencyStatus, OnnxLibraryFixer},
+    deps::{DependencyChecker, DependencyStatus},
     session::InteractiveSession,
     ui::Display,
 };
@@ -34,9 +34,6 @@ impl CommandHandler {
             Some(Commands::Cache { action }) => {
                 Self::cache(action)?;
             }
-            Some(Commands::DownloadModel { size }) => {
-                Self::download_model(&size)?;
-            }
             Some(Commands::Update { check_only }) => {
                 Self::update(check_only)?;
             }
@@ -54,11 +51,6 @@ impl CommandHandler {
     }
 
     fn setup(_context: &CliContext) -> Result<()> {
-        // Check and fix ONNX library issues first
-        println!();
-        OnnxLibraryFixer::auto_fix()?;
-        println!();
-
         ConfigManager::interactive_setup()?;
         Ok(())
     }
@@ -231,24 +223,6 @@ impl CommandHandler {
                 println!("{}", format!("✓ Successfully removed {}", model).green());
             }
         }
-
-        Ok(())
-    }
-
-    fn download_model(size: &str) -> Result<()> {
-        use crate::cache::ONNXEmbedder;
-
-        let cache_dir = Config::cache_dir()?;
-        let models_dir = cache_dir.join("models");
-        std::fs::create_dir_all(&models_dir)?;
-
-        println!("📦 Downloading ONNX embedding model: {}", size);
-
-        tokio::runtime::Runtime::new()?
-            .block_on(async { ONNXEmbedder::download_model(size, &models_dir).await })?;
-
-        println!("[+] Model downloaded successfully!");
-        println!("Location: {}", models_dir.join(size).display());
 
         Ok(())
     }

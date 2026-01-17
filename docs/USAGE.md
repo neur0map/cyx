@@ -19,7 +19,7 @@ Features:
 - Abbreviation expansion (nmap -> network mapper nmap)
 - Stopword removal (show me, how to)
 - Hash-based exact matching
-- Vector similarity search (ONNX embeddings)
+- Vector similarity search
 
 ### Cache Commands
 
@@ -36,13 +36,12 @@ cyx cache remove <hash>        # Remove specific entry
 
 ```
 Cache Statistics
-────────────────────────────────────────
-Total entries: 45
-Cache size: 1.23 MB
-Hit count: 32
-Miss count: 13
-Hit rate: 71.1%
-Cache location: /Users/you/Library/Caches/cyx
+  Total entries: 45
+  Cache size: 1.23 MB
+  Hit count: 32
+  Miss count: 13
+  Hit rate: 71.1%
+  Cache location: /Users/you/Library/Caches/cyx
 ```
 
 ### Cache Storage
@@ -103,7 +102,6 @@ model = "mistral:7b-instruct"
 [cache]
 enabled = true
 ttl_days = 30
-embedding_model = "small"  # small, medium, large
 ```
 
 ### Config Commands
@@ -116,23 +114,13 @@ cyx config set cache.enabled false       # Disable cache
 cyx config set cache.ttl_days 60         # Cache lifetime
 ```
 
-## ONNX Embedding Models
-
-Vector similarity search uses transformer models for semantic matching:
-
-```bash
-cyx download-model small    # 86 MB, 384D (recommended)
-cyx download-model medium   # 400 MB, 768D
-cyx download-model large    # 1.3 GB, 1024D
-```
-
-Models are downloaded to `~/.cache/cyx/models/` and loaded automatically.
+## Cache System Internals
 
 ### How It Works
 
 1. Query normalization creates hash
 2. Check for exact hash match (instant)
-3. If no match, compute ONNX embedding vector
+3. If no match, compute embedding vector
 4. Search for similar cached queries (cosine similarity > 0.80)
 5. If cache miss, call API and store response with embedding
 
@@ -145,13 +133,11 @@ cyx doctor
 Output:
 ```
 System Status
-────────────────────────────────────────
-[+] SQLite (bundled v3.45.0)
-[+] ONNX Runtime (1.16.0)
-[+] Ollama (v0.1.48)
-    Service: Running
-    Models: 2 installed
-[+] Cache (small model, 45 MB, 142 entries)
+  [+] SQLite (bundled v3.45.0)
+  [+] Ollama (v0.1.48)
+      Service: Running
+      Models: 2 installed
+  [+] Cache (256D, 142 entries)
 ```
 
 ## Advanced Usage
@@ -176,12 +162,10 @@ cyx -q --no-tty "nmap scan" | tee scan-cmd.txt
 cyx --no-search "sql injection basics"
 ```
 
-
-
 ## Performance
 
 - Cache hit latency: < 10ms (hash match)
-- Vector search: 50-100ms (ONNX similarity)
+- Vector search: 50-100ms (similarity)
 - API calls: 2-5 seconds
 - Storage: ~100-500 KB per cached query
 
@@ -207,22 +191,4 @@ ollama serve
 
 # Verify models installed
 ollama list
-```
-
-### ONNX Model Loading Error
-
-```bash
-# Re-download model
-rm -rf ~/.cache/cyx/models/small
-cyx download-model small
-
-# Check model files exist
-ls -lh ~/.cache/cyx/models/small/
-```
-
-### M3 Mac dylib Error
-
-```bash
-# Fix ONNX Runtime rpath
-install_name_tool -add_rpath "@executable_path" target/release/cyx
 ```

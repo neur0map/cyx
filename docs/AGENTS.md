@@ -1,20 +1,20 @@
 # AI Assistant Guide
 
-Guide for AI coding assistants working on the cyx project.
+Guide for AI coding assistants working on cyx project.
 
 > **For OpenSpec Workflow**: This project uses OpenSpec for spec-driven development.
-> For the complete workflow guide, see [/openspec/AGENTS.md](../openspec/AGENTS.md).
+> For the complete workflow guide, see [openspec/AGENTS.md](../openspec/AGENTS.md).
 
 ## Project Overview
 
-Cyx is an LLM-powered terminal tool for security command lookup designed for professional penetration testers, security students, and CTF competitors. It provides command-first output with educational modes, smart caching using ONNX semantic search, and support for multiple LLM providers.
+Cyx is an LLM-powered terminal tool for security command lookup designed for professional penetration testers, security students, and CTF competitors. It provides command-first output with educational modes, smart caching using vector similarity, and support for multiple LLM providers.
 
 ## Key Information
 
 ### Project Context
 
-See [/openspec/project.md](../openspec/project.md) for comprehensive details on:
-- Tech stack (Rust, Tokio, ONNX Runtime, SQLite)
+See [openspec/project.md](../openspec/project.md) for comprehensive details on:
+- Tech stack (Rust, Tokio, SQLite)
 - Code style conventions
 - Architecture patterns
 - Testing strategy
@@ -50,24 +50,24 @@ See [/openspec/project.md](../openspec/project.md) for comprehensive details on:
 - **Security & Ethics**: For authorized testing only
 - **API Key Security**: Never commit API keys
 - **Read-Only Tool**: Provides commands but never executes them
-- **Binary Portability**: ONNX Runtime library must accompany binary
+- **Binary Portability**: No external library dependencies
 
 ## Working with This Project
 
 ### Simple Changes
 
 For bug fixes, typos, or small improvements:
-- Make the changes directly
+- Make changes directly
 - Run `make check` to validate
 - Test with `cargo test` and `cargo build`
 
 ### Feature Development
 
 For new features or significant changes:
-- **Use OpenSpec workflow** (see [/openspec/AGENTS.md](../openspec/AGENTS.md))
+- **Use OpenSpec workflow** (see [openspec/AGENTS.md](../openspec/AGENTS.md))
 - Create proposals in `openspec/changes/`
 - Write specifications before implementing
-- Follow the three-stage workflow (Create → Implement → Archive)
+- Follow three-stage workflow (Create → Implement → Archive)
 
 ### Testing
 
@@ -77,12 +77,18 @@ make check          # Fmt + clippy
 make build          # Build release binary
 ```
 
+### Testing Organization
+
+- Unit tests: Inside modules with `#[cfg(test)]`
+- Integration tests: In `tests/` directory
+- Use `tempfile` crate for temporary directories in tests
+
 ## Domain-Specific Knowledge
 
 - **Command-First Philosophy**: Prioritize executable commands over explanations
 - **Learn Mode**: Educational mode (`--learn`) for detailed breakdowns
 - **Provider Support**: Perplexity Sonar, Groq, and Ollama
-- **Semantic Cache**: Vector similarity using ONNX embeddings
+- **Smart Cache**: Vector similarity using TF-IDF based embeddings
 - **Security Context**: Tool designed for professional security work
 
 ## File Locations
@@ -90,7 +96,7 @@ make build          # Build release binary
 ```
 cyx/
 ├── src/              # Rust source code
-├── data/             # Embedded data (normalization, models)
+├── data/             # Embedded data (normalization)
 ├── tests/            # Integration tests
 ├── docs/             # All documentation (you are here)
 └── openspec/         # Spec-driven development system
@@ -98,7 +104,7 @@ cyx/
 
 ## Getting Help
 
-- Read the [README.md](../README.md) for project overview
+- Read [README.md](../README.md) for project overview
 - Check [BUILDING.md](BUILDING.md) for build issues
 - Review [openspec/project.md](../openspec/project.md) for conventions
 - For OpenSpec workflow, see [openspec/AGENTS.md](../openspec/AGENTS.md)

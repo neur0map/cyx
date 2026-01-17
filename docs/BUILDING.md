@@ -4,7 +4,7 @@ This document explains how to build cyx from source and publish to crates.io.
 
 ## Overview
 
-Cyx uses ONNX Runtime for semantic search capabilities. The `ort` crate with `download-binaries` feature automatically handles the ONNX Runtime library during build.
+Cyx uses TF-IDF based vector similarity for cache matching. All dependencies are managed by cargo.
 
 ## Development Build
 
@@ -57,14 +57,9 @@ Install from source to test before publishing:
 # Install from current directory
 cargo install --path .
 
-# Or use Makefile (installs + handles ONNX library)
+# Or use Makefile
 make install
 ```
-
-The `ort` crate automatically downloads the ONNX Runtime library during build. The library is placed in:
-- **Linux**: `libonnxruntime.so.1.16.0`
-- **macOS**: `libonnxruntime.1.16.0.dylib`
-- **Windows**: `onnxruntime.dll`
 
 ## Publishing to Crates.io
 
@@ -131,16 +126,6 @@ Update version in:
 
 ## Troubleshooting
 
-### ONNX Library Not Found
-
-The `ort` crate's `download-binaries` feature handles this automatically. If you see errors:
-
-```bash
-# Clean and rebuild
-cargo clean
-cargo build --release
-```
-
 ### Publish Errors
 
 Common issues:
@@ -153,7 +138,7 @@ Common issues:
 
 Current package size: ~50KB (source only, no binaries)
 
-The ONNX Runtime is downloaded during user installation, not included in the crate package.
+All dependencies are managed by cargo during installation.
 
 ## Makefile Commands
 
@@ -220,11 +205,12 @@ git push origin v0.2.2
 ## Dependencies
 
 Key runtime dependencies managed in `Cargo.toml`:
-- `ort` - ONNX Runtime bindings (downloads library)
 - `reqwest` - HTTP client for API calls
 - `rusqlite` - SQLite for cache (bundled)
 - `clap` - CLI argument parsing
 - `tokio` - Async runtime
+- `serde` - Serialization
+- `bincode` - Binary encoding for cache
 
 All dependencies are automatically handled by cargo.
 

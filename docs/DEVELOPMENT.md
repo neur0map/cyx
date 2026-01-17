@@ -13,11 +13,11 @@ Guide for contributors and developers working on cyx.
 ### Getting Started
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/neur0map/cyx.git
 cd cyx
 
-# Build the project
+# Build project
 make build
 
 # Or use cargo directly
@@ -29,15 +29,15 @@ cargo build --release
 ```
 cyx/
 ├── src/              # Source code
-│   ├── cache/        # SQLite caching & semantic search
+│   ├── cache/        # SQLite caching & vector similarity
 │   ├── cli/          # Command-line argument parsing
 │   ├── config/       # User configuration management
 │   ├── deps/         # Dependency/LLM provider detection
 │   ├── llm/          # LLM provider implementations
-│   ├── search/       # Query normalization & semantic matching
+│   ├── search/       # Query normalization & similarity matching
 │   ├── session/      # Interactive session management
 │   └── ui/           # Terminal UI & formatting
-├── data/             # Embedded data files (normalization, models)
+├── data/             # Embedded data files (normalization)
 ├── tests/            # Integration tests
 ├── docs/             # Documentation
 └── openspec/         # Spec-driven development workflow
@@ -62,9 +62,6 @@ make fmt
 # Run clippy
 make check
 # or: cargo clippy -- -D warnings
-
-# Verbose checks
-make check-verbose
 ```
 
 ### Before Committing
@@ -78,128 +75,120 @@ make check  # Runs fmt check + clippy
 ## Code Style Conventions
 
 - **Formatter**: `cargo fmt` with standard Rust conventions
-- **Linter**: `cargo clippy` with pedantic checks enabled
-- **Module Structure**: Separate directories for each major component
-- **Error Handling**: Use `anyhow` for ergonomic error propagation
-- **Naming**: Follow Rust naming conventions (snake_case for functions/variables, PascalCase for types)
+- **Line width**: 100 characters (configured in .editorconfig)
+- **Error handling**: Use `anyhow::Result<T>` for functions
+- **Async**: Use `tokio` for async operations
+- **CLI**: Use `clap` with derive macros
 
 ## Testing
-
-### Running Tests
 
 ```bash
 # Run all tests
 cargo test
 
-# Run specific test
-cargo test normalizer
-
 # Run with output
 cargo test -- --nocapture
+
+# Run specific test
+cargo test test_cache_similarity
+
+# Or use Makefile
+make test
 ```
 
-### Test Files
+### Test Organization
 
-- Integration tests are in `tests/` directory
-- Example files are in `examples/` directory (runnable binaries)
+- Unit tests: Inside modules with `#[cfg(test)]`
+- Integration tests: In `tests/` directory
+- Use `tempfile` crate for temporary directories in tests
 
-## Building
+## Release Process
 
-### Development Build
+### Before Release
+
+1. Update version in `Cargo.toml`
+2. Update `docs/CHANGELOG.md`
+3. Run `make check`
+4. Run `cargo test`
+5. Test local install: `cargo install --path .`
+
+### Creating Release
 
 ```bash
+# Build release
 make build
-# Creates release build and symlinks to ./cyx
-```
 
-### Release Build
+# Test functionality
+./target/release/cyx "test query"
 
-```bash
-cargo build --release
-# Output: target/release/cyx
-```
-
-### Cross-Platform Compatibility
-
-The crate is published to crates.io and cargo automatically handles platform-specific builds during user installation.
-
-## Architecture Patterns
-
-### Provider Pattern
-
-LLM providers (Perplexity, Groq, Ollama) implement a common interface:
-- Abstract provider interface for flexibility
-- Easy to add new providers
-- Consistent error handling across providers
-
-### Semantic Caching
-
-- ONNX-powered vector embeddings for intelligent cache lookups
-- SQLite for persistent cache storage
-- Query normalization for better matching
-
-### Data Embedding
-
-Critical data files (ONNX model, tokenizer, normalization data) are embedded in the binary at compile time for portable execution.
-
-## Publishing to Crates.io
-
-Follow the comprehensive guide in [BUILDING.md](BUILDING.md) for the complete publishing workflow.
-
-Quick version:
-
-```bash
-# 1. Update version and changelog
-vim Cargo.toml docs/CHANGELOG.md
-
-# 2. Quality checks
-make check && cargo test
-
-# 3. Test local install
-cargo install --path .
-
-# 4. Commit and tag
-git add -A
+# Commit version bump
+git add Cargo.toml docs/CHANGELOG.md
 git commit -m "Bump version to v0.2.2"
+git push
+
+# Create tag
 git tag v0.2.2
-git push origin master
 git push origin v0.2.2
 
-# 5. Publish to crates.io
+# Publish to crates.io
 cargo publish
 ```
-
-See [BUILDING.md](BUILDING.md) for detailed pre-publish checklist and troubleshooting.
-
-## Makefile Commands
-
-```bash
-make help          # Show all available commands
-make build         # Build release and create symlink
-make check         # Run fmt + clippy checks
-make fmt           # Auto-format code
-make install       # Install to system
-make setup         # Run setup wizard
-make clean         # Clean build artifacts
-```
-
-## Git Workflow
-
-- **Main Branch**: `master`
-- **Commit Style**: Descriptive messages with context
-- **Pre-merge**: Run `make check` to validate code quality
-- **Releases**: Tag-based (e.g., `v0.2.1`) trigger automated builds
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run `make check` to ensure code quality
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+2. Create a feature branch
+3. Make changes with tests
+4. Run `make check` before committing
+5. Submit a pull request
 
-## License
+## Data Files
 
-MIT License - See [LICENSE](../LICENSE) for details.
+Critical data files (normalization) are embedded in the binary at compile time for portable execution:
+- `data/normalization/stopwords.json` - Common words to remove
+- `data/normalization/abbreviations.json` - Security term expansions
+
+## Adding Features
+
+### New LLM Provider
+
+1. Create new module in `src/llm/`
+2. Implement `LLMProvider` trait
+3. Add variant to `LLMProvider` enum in `src/config/mod.rs`
+4. Update CLI args and config handling
+5. Add tests
+
+### New Cache Features
+
+1. Modify `src/cache/storage.rs` for database schema
+2. Update migration logic
+3. Add tests
+4. Update documentation
+
+## Performance Considerations
+
+- Cache hit latency: < 10ms (hash match)
+- Vector similarity: 50-100ms
+- API calls: 2-5 seconds
+- Storage: ~100-500 KB per cached query
+
+## Troubleshooting
+
+### Build Errors
+
+- Ensure Rust 1.70+ is installed
+- Run `cargo clean && cargo build` for clean build
+- Check `Cargo.lock` is up to date
+
+### Test Failures
+
+- Ensure no API keys are hardcoded in tests
+- Use mocks for external services
+- Run `cargo test -- --nocapture` for verbose output
+
+## Resources
+
+- [Rust Book](https://doc.rust-lang.org/book/)
+- [clap Documentation](https://docs.rs/clap/)
+- [tokio Documentation](https://docs.rs/tokio/)
+- [Crates.io Publishing Guide](https://doc.rust-lang.org/cargo/reference/cargo/package-layouts.html)

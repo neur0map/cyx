@@ -56,10 +56,10 @@ For users who want to run local models:
 1. **Install Ollama**: Download from [ollama.com](https://ollama.com)
 2. **Download a model**: `ollama pull mistral:7b-instruct`
 3. **Configure cyx**:
-   ```bash
-   cyx config set provider ollama
-   cyx config set ollama_model "mistral:7b-instruct"
-   ```
+    ```bash
+    cyx config set provider ollama
+    cyx config set ollama_model "mistral:7b-instruct"
+    ```
 
 Note: Ollama is for advanced users and requires manual setup.
 
@@ -74,22 +74,7 @@ cargo install --path .
 cyx setup
 ```
 
-The `ort` crate automatically downloads the ONNX Runtime library during build.
-
 ## Troubleshooting
-
-### ONNX Library Errors
-
-If you see errors about `libonnxruntime`, cyx will automatically attempt to fix it when you run:
-
-```bash
-cyx setup
-```
-
-The auto-fix will:
-- Locate the ONNX library in your cargo cache
-- Copy it to the correct location
-- Provide manual instructions if needed
 
 ### API Key Issues
 
