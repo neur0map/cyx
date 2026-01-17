@@ -4,7 +4,7 @@ Fast, simple command-line security tool powered by AI. Install with cargo, set u
 
 ## Demo
 
-[▶️ Watch the demo video](./cyx.mp4)
+![Cyx Demo](./cyx.gif)
 
 *See cyx in action - quick command lookups, learn mode, and more!*
 
