@@ -5,22 +5,6 @@ use std::time::Duration;
 pub struct Display;
 
 impl Display {
-    /// Display a banner/header
-    pub fn banner() {
-        let banner = r#"
-  =========================================
-     CYX - Cybersecurity Companion
-     Your hacking battle buddy
-  =========================================
-        "#;
-        println!("{}", banner.cyan().bold());
-    }
-
-    /// Display a section header
-    pub fn section(title: &str) {
-        println!("\n{}", format!("--- {} ---", title).cyan().bold());
-    }
-
     /// Display a success message
     pub fn success(message: &str) {
         println!("{} {}", "[+]".green().bold(), message.green());
@@ -39,31 +23,6 @@ impl Display {
     /// Display a warning message
     pub fn warning(message: &str) {
         println!("{} {}", "[!]".yellow().bold(), message.yellow());
-    }
-
-    /// Display a loading spinner message
-    pub fn loading(message: &str) {
-        println!("{} {}", "[~]".cyan().bold(), message.dimmed());
-    }
-
-    /// Display source information for LLM response
-    pub fn sources(provider_name: &str, model_name: &str, searched: bool) {
-        println!("\n{}", "[*] SOURCES".cyan().bold());
-        println!("{}", "───────────────────────────────────────".cyan());
-        println!(
-            "{} {} ({})",
-            "Provider:".dimmed(),
-            provider_name.cyan(),
-            model_name.dimmed()
-        );
-
-        let search_status = if searched {
-            "Yes (performed web search)".green()
-        } else {
-            "No (knowledge base only)".yellow()
-        };
-        println!("{} {}", "Search:".dimmed(), search_status);
-        println!();
     }
 
     /// Display source information with extracted links
